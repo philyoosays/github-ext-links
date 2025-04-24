@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "GitHub External Links to New Tab",
+  "version": "1.0",
+  "description": "Opens external links from GitHub in a new tab.",
+  "permissions": ["tabs", "activeTab", "webNavigation"],
+  "content_scripts": [
+    {
+      "matches": ["https://github.com/*"],
+      "js": ["content.js"]
+    }
+  ]
+}
