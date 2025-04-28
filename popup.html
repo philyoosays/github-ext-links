@@ -71,18 +71,45 @@
             height: 15px;
             margin-top: 5px;
         }
+        
+        .option-group {
+            margin-bottom: 10px;
+            border-bottom: 1px solid #555;
+            padding-bottom: 10px;
+        }
+        
+        .option-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
     </style>
 </head>
 
 <body>
     <h2>GitHub External Links</h2>
-    <div class="toggle-container" id="enabled">
-        <div class="switch">
-            <input type="checkbox" id="enabledSwitch">
-            <span class="slider"></span>
+    
+    <div class="option-group">
+        <div class="option-title">General</div>
+        <div class="toggle-container" id="enabled">
+            <div class="switch">
+                <input type="checkbox" id="enabledSwitch">
+                <span class="slider"></span>
+            </div>
+            <span>Open external links in new tabs</span>
         </div>
-        <span>Open external links in new tabs</span>
     </div>
+    
+    <div class="option-group">
+        <div class="option-title">Tab Organization</div>
+        <div class="toggle-container" id="tabGrouping">
+            <div class="switch">
+                <input type="checkbox" id="tabGroupingSwitch">
+                <span class="slider"></span>
+            </div>
+            <span>Group tabs by source PR</span>
+        </div>
+    </div>
+    
     <div id="status" class="status"></div>
     <script src="popup.js"></script>
 </body>
