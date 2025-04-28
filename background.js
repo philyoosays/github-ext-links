@@ -4,7 +4,8 @@ let tabGroupMappings = {};
 // Default settings
 const defaultSettings = {
     enabled: true,
-    tabGroupingEnabled: true
+    tabGroupingEnabled: true,
+    groupNaming: 'url_ext'
 };
 
 // Load settings
@@ -22,49 +23,58 @@ chrome.storage.onChanged.addListener(function (changes, namespace) {
 // Handle messages from content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "openExternalLink") {
-        handleExternalLink(message.url, sender.tab.id);
+        handleExternalLink(message.url, sender.tab);
         sendResponse({ success: true });
         return true;
     }
 });
 
 // Function to handle opening external links
-async function handleExternalLink(url, sourceTabId) {
+async function handleExternalLink(url, sourceTab) {
     // Get current settings
     const settings = await chrome.storage.sync.get(defaultSettings);
-
     if (!settings.enabled) return;
 
-    // Create the new tab
-    const newTab = await chrome.tabs.create({
-        url: url,
-        active: true
+    const newTab = await chrome.tabs.create({ url, active: true });
+
+    handleTabGrouping(sourceTab, newTab.id, settings);
+}
+
+async function addToGroup(groupId, newTabId) {
+    await chrome.tabs.group({
+        tabIds: [newTabId],
+        groupId
+    });
+}
+
+async function createNewGroup(newTabId, sourceTab, settings) {
+    const { id, title, url } = sourceTab;
+
+    const groupId = await chrome.tabs.group({
+        tabIds: [id, newTabId]
     });
 
+    let groupTitle = url.split('/').slice(-2).join('/');
+    if (settings.groupNaming === 'tab_title') {
+        groupTitle = title.split(' · ')[0];
+    }
+
+    // Color the group based on the domain
+    await chrome.tabGroups.update(groupId, {
+        color: "blue",
+        title: groupTitle
+    });
+}
+
+async function handleTabGrouping(sourceTab, newTabId, settings) {
     if (!settings.tabGroupingEnabled) return;
-    
+
     try {
-        // Get info about the source tab
-        const sourceTab = await chrome.tabs.get(sourceTabId);
-
-        // If source tab is in a group, add new tab to that group
-        if (sourceTab.groupId && sourceTab.groupId !== chrome.tabGroups.TAB_GROUP_ID_NONE) {
-            await chrome.tabs.group({
-                tabIds: [newTab.id],
-                groupId: sourceTab.groupId
-            });
-        }
-        // If source tab is not in a group, create a new group
-        else {
-            const groupId = await chrome.tabs.group({
-                tabIds: [sourceTabId, newTab.id]
-            });
-
-            // Color the group based on the domain
-            await chrome.tabGroups.update(groupId, {
-                color: "blue",
-                title: "GitHub Links"
-            });
+        const groupId = sourceTab.groupId;
+        if (groupId && groupId !== chrome.tabGroups.TAB_GROUP_ID_NONE) {
+            addToGroup(groupId, newTabId);
+        } else {
+            createNewGroup(newTabId, sourceTab, settings);
         }
     } catch (error) {
         console.error("Error grouping tabs:", error);
