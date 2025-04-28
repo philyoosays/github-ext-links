@@ -3,7 +3,20 @@
   "name": "GitHub External Links to New Tab",
   "version": "1.0",
   "description": "Opens external links from GitHub in a new tab.",
-  "permissions": ["tabs", "activeTab", "webNavigation"],
+  "permissions": ["tabs", "activeTab", "webNavigation", "storage"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "120": "icons/icon120.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "120": "icons/icon120.png"
+  },
   "content_scripts": [
     {
       "matches": ["https://github.com/*"],
