@@ -39,6 +39,10 @@ document.addEventListener('DOMContentLoaded', function () {
   enabledToggle.addEventListener('click', function () {
     enabledSwitch.checked = !enabledSwitch.checked;
     handleToggleChange('enabled', enabledSwitch);
+    if (!enabledSwitch.checked) {
+      tabGroupingSwitch.checked = enabledSwitch.checked;
+      handleToggleChange('tabGroupingEnabled', tabGroupingSwitch);
+    }
   });
 
   // Save state when tab grouping toggle changes
