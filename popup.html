@@ -3,105 +3,15 @@
 
 <head>
     <title>GitHub External Links</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 15px;
-            width: 250px;
-            background: #353535;
-            color: #fff;
-            border-radius: 5px;
-        }
-
-        .toggle-container {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 40px;
-            height: 24px;
-            margin-right: 10px;
-        }
-
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 24px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-
-        input:checked+.slider {
-            background-color: #2196F3;
-        }
-
-        input:checked+.slider:before {
-            transform: translateX(16px);
-        }
-
-        .status {
-            color: green;
-            font-size: 12px;
-            height: 15px;
-            margin-top: 5px;
-        }
-        
-        .option-group {
-            margin-bottom: 10px;
-            border-bottom: 1px solid #555;
-            padding-bottom: 10px;
-        }
-        
-        .option-title {
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
-
-        .selector {
-            width: 40%;
-            padding: 0.25rem;
-            margin-left: 0.5rem;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            background-color: #333;
-            color: #fff;
-            font-size: 14px;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
     <h2>GitHub External Links</h2>
     
-    <div class="option-group">
+    <div class="option-group no-border">
         <div class="option-title">General</div>
-        <div class="toggle-container" id="enabled">
+        <div class="option" id="enabled">
             <div class="switch">
                 <input type="checkbox" id="enabledSwitch">
                 <span class="slider"></span>
@@ -109,26 +19,41 @@
             <span>Open external links in new tabs</span>
         </div>
     </div>
+
+    <!-- <div class="option-group" id="include">
+        <div class="option-title">Include</div>
+        <div class="option">
+            <input type="text" id="includeInput">
+            <button class="button">Add</button>
+        </div>
+        <div id="include-list"></div>
+    </div> -->
     
     <div class="option-group">
         <div class="option-title">Tab Organization</div>
-        <div class="toggle-container" id="tabGrouping">
-            <div class="switch">
-                <input type="checkbox" id="tabGroupingSwitch">
-                <span class="slider"></span>
+        <div class="option-container" id="tabGrouping">
+            <div class="option">
+                <div class="switch">
+                    <input type="checkbox" id="tabGroupingSwitch">
+                    <span class="slider"></span>
+                </div>
+                <span>Group tabs with source tab</span>
             </div>
-            <span>Group tabs by source PR</span>
         </div>
-        <div class="toggle-container" id="naming">
-            <p>Name Groups By</p>
-            <select class="selector" id="groupNamingSelect">
-                <option value="url_ext">url ext</option>
-                <option value="tab_title">tab title</option>
-            </select>
+        <div class="option-container" id="naming">
+            <div class="option">
+                <p>Name Groups By</p>
+                <select class="selector" id="groupNamingSelect">
+                    <option value="url_ext">url ext</option>
+                    <option value="tab_title">tab title</option>
+                </select>
+            </div>
+            <div id="group-name-example"></div>
         </div>
     </div>
     
     <div id="status" class="status"></div>
+    <!-- <script src="load_popup.js"></script> -->
     <script src="popup.js"></script>
 </body>
 

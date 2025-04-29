@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>GitHub External Links Options</title>
+    <link href="popup.html" rel="import" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #353535;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            min-width: 100vw;
+            margin: 0;
+        }
+
+        #popup-container {
+            width: 100vw;
+            height: 90vh;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* This ensures the iframe has no border and fits the content */
+        iframe {
+            border: none;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="popup-container"></div>
+    <script src="load_options.js"></script>
+</body>
+</html>

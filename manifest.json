@@ -17,6 +17,7 @@
     "48": "icons/icon48.png",
     "120": "icons/icon120.png"
   },
+  "options_page": "options.html",
   "content_scripts": [
     {
       "matches": ["https://github.com/*"],

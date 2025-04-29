@@ -1,7 +1,8 @@
 // Default settings
 let settings = {
   enabled: true,
-  tabGroupingEnabled: true
+  tabGroupingEnabled: true,
+  groupNaming: 'url_ext',
 };
 
 // Load settings from storage
@@ -24,16 +25,16 @@ document.addEventListener('click', function(event) {
   if (!settings.enabled) return;
   
   const link = event.target.closest('a');
-  if (link) {
-    const url = new URL(link.href);
-    if (url.hostname !== window.location.hostname) {
-      event.preventDefault();
-      
-      // Send message to background script to handle the link opening
-      chrome.runtime.sendMessage({
-        action: "openExternalLink",
-        url: url.href
-      });
-    }
+  if (!link) return;
+
+  const url = new URL(link.href);
+  if (url.hostname !== window.location.hostname) {
+    event.preventDefault();
+    
+    // Send message to background script to handle the link opening
+    chrome.runtime.sendMessage({
+      action: "openExternalLink",
+      url: url.href
+    });
   }
 });
