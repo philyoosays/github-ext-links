@@ -37,7 +37,7 @@ async function handleExternalLink(url, sourceTab) {
 
     const newTab = await chrome.tabs.create({ url, active: true });
 
-    handleTabGrouping(sourceTab, newTab.id, settings);
+    handleTabGrouping(sourceTab, newTab, settings);
 }
 
 async function addToGroup(groupId, newTabId) {
@@ -47,16 +47,26 @@ async function addToGroup(groupId, newTabId) {
     });
 }
 
-async function createNewGroup(newTabId, sourceTab, settings) {
+async function createNewGroup(newTab, sourceTab, settings) {
     const { id, title, url } = sourceTab;
 
     const groupId = await chrome.tabs.group({
-        tabIds: [id, newTabId]
+        tabIds: [id, newTab.id]
     });
 
-    let groupTitle = url.split('/').slice(-2).join('/');
+    const sourceUrlIsGithub = new URL(url).hostname === 'github.com';
+    const newUrlIsGithub = new URL(newTab.pendingUrl).hostname === 'github.com';
+
+    let parsedUrl = url;
+    let parsedTitle = title;
+    if (!sourceUrlIsGithub && newUrlIsGithub) {
+        parsedUrl = newTab.pendingUrl;
+        parsedTitle = newTab.title;
+    }
+
+    let groupTitle = parsedUrl.split('/').slice(-2).join('/');
     if (settings.groupNaming === 'tab_title') {
-        groupTitle = title.split(' · ')[0];
+        groupTitle = parsedTitle.split(' · ')[0];
     }
 
     // Color the group based on the domain
@@ -66,17 +76,36 @@ async function createNewGroup(newTabId, sourceTab, settings) {
     });
 }
 
-async function handleTabGrouping(sourceTab, newTabId, settings) {
+async function handleTabGrouping(sourceTab, newTab, settings) {
     if (!settings.tabGroupingEnabled) return;
 
     try {
         const groupId = sourceTab.groupId;
         if (groupId && groupId !== chrome.tabGroups.TAB_GROUP_ID_NONE) {
-            addToGroup(groupId, newTabId);
+            addToGroup(groupId, newTab.id);
         } else {
-            createNewGroup(newTabId, sourceTab, settings);
+            createNewGroup(newTab, sourceTab, settings);
         }
     } catch (error) {
         console.error("Error grouping tabs:", error);
     }
 }
+
+function setGroupNameWithPriority(sourceTab, newTab, settings) {
+    const sourceUrlIsGithub = new URL(sourceTab.url).hostname === 'github.com';
+    const newUrlIsGithub = new URL(newTab.pendingUrl).hostname === 'github.com';
+
+    let parsedUrl = url;
+    let parsedTitle = title;
+    if (!sourceUrlIsGithub && newUrlIsGithub) {
+        parsedUrl = newTab.pendingUrl;
+        parsedTitle = newTab.title;
+    }
+
+    let groupTitle = parsedUrl.split('/').slice(-2).join('/');
+    if (settings.groupNaming === 'tab_title') {
+        groupTitle = parsedTitle.split(' · ')[0];
+    }
+}
+
+console.log("Background script loaded.");
