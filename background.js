@@ -56,6 +56,8 @@ async function createNewGroup(newTab, sourceTab, settings) {
 
     const sourceUrlIsGithub = new URL(url).hostname === 'github.com';
     const newUrlIsGithub = new URL(newTab.pendingUrl).hostname === 'github.com';
+    const sourceUrlIsJira = new URL(sourceTab.url).hostname === 'priceline.atlassian.net';
+    const newUrlIsJira = new URL(newTab.pendingUrl).hostname === 'priceline.atlassian.net';
 
     let parsedUrl = url;
     let parsedTitle = title;
@@ -66,7 +68,17 @@ async function createNewGroup(newTab, sourceTab, settings) {
 
     let groupTitle = parsedUrl.split('/').slice(-2).join('/');
     if (settings.groupNaming === 'tab_title') {
-        groupTitle = parsedTitle.split(' · ')[0];
+        groupTitle = parsedTitle.split(/ [^\s\w-] /)[0];
+    }
+
+
+    if (sourceUrlIsJira || newUrlIsJira) {
+        parsedUrl = newTab.pendingUrl;
+        if (parsedUrl.includes('selectedIssue=')) {
+            groupTitle = new URL(parsedUrl).searchParams.get('selectedIssue');
+        } else if (parsedUrl.startsWith('https://priceline.atlassian.net/browse/')) {
+            groupTitle = parsedUrl.split('/').slice(-1)[0];
+        }
     }
 
     // Color the group based on the domain
@@ -92,11 +104,26 @@ async function handleTabGrouping(sourceTab, newTab, settings) {
 }
 
 function setGroupNameWithPriority(sourceTab, newTab, settings) {
+    const priorities = [
+        {
+            hostname: 'priceline.atlassian.net',
+            parser: () => {
+                const sourceIsJira = new URL(sourceTab.url).hostname === 'priceline.atlassian.net';
+                const newIsJira = new URL(newTab.url).hostname === 'priceline.atlassian.net';
+                if (sourceIsJira) {
+                    
+                }
+            }
+        }
+    ]
+
+    const sourceUrlIsJira = new URL(sourceTab.url).hostname === 'priceline.atlassian.net';
+    const newUrlIsJira = new URL(newTab.pendingUrl).hostname === 'priceline.atlassian.net';
     const sourceUrlIsGithub = new URL(sourceTab.url).hostname === 'github.com';
     const newUrlIsGithub = new URL(newTab.pendingUrl).hostname === 'github.com';
 
-    let parsedUrl = url;
-    let parsedTitle = title;
+    let parsedUrl = sourceTab.url;
+    let parsedTitle = sourceTab.title;
     if (!sourceUrlIsGithub && newUrlIsGithub) {
         parsedUrl = newTab.pendingUrl;
         parsedTitle = newTab.title;
@@ -106,6 +133,8 @@ function setGroupNameWithPriority(sourceTab, newTab, settings) {
     if (settings.groupNaming === 'tab_title') {
         groupTitle = parsedTitle.split(' · ')[0];
     }
+
+    return groupTitle;
 }
 
 console.log("Background script loaded.");
