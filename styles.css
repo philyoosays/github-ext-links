@@ -22,7 +22,13 @@ h2 {
 
 .option {
     display: flex;
-    align-items: center;
+    align-items: baseline;
+    margin: 0.3rem 0;
+    width: 100%;
+}
+
+.vertical {
+    flex-direction: column;
 }
 
 .option-group {
@@ -30,12 +36,18 @@ h2 {
     margin-bottom: 1rem;
     border-top: 1px solid #555;
     padding-top: 15px;
+    display: flex;
+    flex-direction: column;
 }
 
-.option-title {
+.option-group-title {
     font-weight: bold;
     margin-bottom: 8px;
     width: 100%;
+}
+
+.adjacent {
+    margin-left: 0.5rem;
 }
 
 .last-one { 
@@ -45,6 +57,19 @@ h2 {
 #includeInput {
     margin-right: 10px;
     padding: 0.2rem 1rem;
+}
+
+#hostsToClear {
+    margin: 1rem auto 0 auto;
+}
+
+#hostsToClear > div {
+    margin: 2px 0;
+}
+
+#hostsToClear > div > span {
+    word-wrap: break-word;
+    overflow-x: hidden;
 }
 
 .switch {
@@ -104,15 +129,51 @@ input:checked+.slider:before {
     border-top: 0 !important;
 }
 
+.button {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.button:hover {
+    background-color: #0056b3;
+}
+
+.button-delete {
+    background-color: #f44336;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 10px;
+    margin: 0 10px;
+}
+
+.button-delete:hover {
+    background-color: #d32f2f;
+}
+
 .selector {
-    width: 50%;
+    width: 100%;
     padding: 0.25rem;
     margin-left: 0.5rem;
     border: 1px solid #ccc;
     border-radius: 4px;
     background-color: #333;
     color: #fff;
-    font-size: 14px;
+    font-size: 12px;
+}
+
+#autoClearInterval {
+    width: 15%;
+}
+
+#clearNowBtn {
+    font-size: 12px;
+    margin: 0 auto;
 }
 
 .button {
