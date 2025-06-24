@@ -25,7 +25,7 @@ Modifies the timestamps on github to include date and time.
 - **Enable**: Disable or enable the feature
 - **Only For PRs**: Only works when url includes `/pull/`
 
-#### Tab Grouping
+### Tab Grouping
 Opens new tabs grouped together with the originating tab and names the tabs intelligently. It is based on the source tab.
 
 - **Group Tabs With Source Tab**: Disable or enable the feature
