@@ -38,7 +38,7 @@ Opens new tabs grouped together with the originating tab and names the tabs inte
 
 ***NOTE***: Planning to add a priority feature meaning some tab names are more valuable than others. For instance `PIPE-1234` is more valuable than `pull/1234` and with an enable/disable toggle will auto rename the tab when new tabs are added to a group. I also want to add a configurable list so a user can set the priority by host name themselves.
 
-#### Tab Organization
+### Tab Organization
 Utilities for organizing tabs.
 - **Clean Up Tabs**: Closes tabs that are deemed to be unnecessary. Current hosts (hardcoded)
     - `https://priceline.gpcloudservice.com/*`
@@ -48,5 +48,5 @@ Utilities for organizing tabs.
 
 ***NOTE***: Planning to make this configurable.
 
-#### Debug
+### Debug
 When the **popup** local storage has a key/value `EXT_DEBUG: true`, the plugin will be enabled. Currently only contains printing information for debugging features.
