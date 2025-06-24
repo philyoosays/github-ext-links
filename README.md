@@ -44,6 +44,7 @@ Utilities for organizing tabs.
     - `https://priceline.zoom.us/j/*`
     - `https://cloud.google.com/sdk/auth_success`
     - `https://awscpass.booking.com/*`
+
 ***NOTE***: Planning to make this configurable.
 
 #### Debug
