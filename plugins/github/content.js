@@ -8,10 +8,11 @@
 
   openExternalInNewTab()
   parseComments()
-
+  
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       if (mutation.type !== 'childList') return
+      // debounce(parseComments, 100)
       replaceTimestamps()
       // slashCommandMenu()
       // downloadClonedElementAsHtml()
@@ -198,7 +199,7 @@ function createClone () {
 
 function parseComments() {
   const timeLineItems = document.querySelectorAll('.TimelineItem.js-comment-container')
-  console.log(timeLineItems)
+  // console.log(timeLineItems)
 
   // const dunno = timeLineItems[timeLineItems.length - 2]
   // console.log(dunno.textContent)
@@ -213,7 +214,13 @@ function parseComments() {
    *  author: string,
    *  isArgo: string,
    *  date: Date,
-   *  comment: string,
+   *  comment: {
+   *    raw: string,
+   *    parsed: string,
+   *  }
+   *  debug: {
+   *    authorParse: string,
+   *  }
    *  slashCommandLegend: boolean,
    *  slashCommands: string[]
    *  slashCommandUser: string,
@@ -226,11 +233,15 @@ function parseComments() {
     const timelineObj = {}
     const header = item.querySelector('.timeline-comment-header')
     // console.log(header.textContent.replace(/\n/g, ' '))
-    const author = parseAuthorByHeader(header.innerText.trim().split(' '))
+    const author = parseAuthorByHeader(header.innerText.replace(/\n/g, ' ').trim().split(' '))
     timelineObj.author = author
+    timelineObj.debug = {
+      authorParse: 'innerText'
+    }
     if (!author) {
       const textContentText = header.textContent.replace(/\n/g, ' ').split(' ').filter(Boolean)
       timelineObj.author = parseAuthorByHeader(textContentText)
+      timelineObj.debug.authorParse = 'textContent'
     }
     timelineObj.isArgo = timelineObj.author.includes('pcln-argo')
 
@@ -238,15 +249,19 @@ function parseComments() {
     timelineObj.date = new Date(dateElem.getAttribute('datetime'))
 
     const commentBody = item.querySelector('.comment-body, .markdown-body, .js-comment-body')
-    timelineObj.comment = commentBody.textContent.replace(/\n{3,}/g, '\n\n')
-    const slashCmd = commentBody.textContent.matchAll(/(?: |\n)(\/[a-zA-Z]+)/gm)
+    timelineObj.comment = {
+      raw: commentBody.textContent.replace(/\n{3,}/g, '\n\n').trim(),
+      parsed: commentBody.textContent.replace(/\n/g, ' ').trim(),
+      innerText: commentBody.innerText.trim()
+    }
 
+    const slashCmd = commentBody.textContent.matchAll(/(?: |\n)(\/[a-zA-Z]+)/gm)
     timelineObj.slashCommands = []
     for (const cmd of slashCmd) {
       timelineObj.slashCommands.push(cmd[1])
     }
 
-    timelineObj.slashCommandLegend = timelineObj.comment.includes('Click here for all available commands.')
+    timelineObj.slashCommandLegend = timelineObj.comment.raw.includes('Click here for all available commands.')
 
     // console.log(commentBody.textContent)
     // console.log(commentBody.innerText)
@@ -255,21 +270,11 @@ function parseComments() {
       timelineObj.slashCommandAck = commentBody.innerText.includes('was processed')
       timelineObj.slashCommandAckText = commentBody.innerText.replace(timelineObj.slashCommands[0], '').trim()
     }
-    const { author: auth, isArgo, slashCommandLegend, slashCommands, slashCommandAck, slashCommandAckText } = timelineObj
-    console.log({ auth, isArgo, slashCommandLegend, slashCommandAck, slashCommandAckText })  
-
-    if (header.textContent.includes('pcln-argo') && header.textContent.includes('commented')) {
-      // if (slashCmd) {
-      //   console.log(commentBody.textContent)
-      //   console.log(commentBody.textContent.split('\n').filter(Boolean))
-      //   console.log(slashCmd)
-      // }
-      // if (slashCmd) {
-      //   console.log('✌️', slashCmd)
-      //   console.log('✌️', commentBody.textContent.replace(/\n/g, ' '))
-      // }
-    }
+    // const { author: auth, isArgo, slashCommandLegend, slashCommands, slashCommandAck, slashCommandAckText } = timelineObj
+    // console.log({ auth, isArgo, slashCommandLegend, slashCommandAck, slashCommandAckText })  
+    parsedTimeline.push(timelineObj)
   })
+  console.log(parsedTimeline)
 }
 
 let count = 0
@@ -363,3 +368,12 @@ function parseAuthorByHeader(headerText) {
   // console.log(headerText[idx - 1])
   return headerText[idx - 1]
 }
+
+function debounce(func, wait) {
+  let timeout;
+  return function(...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
+
