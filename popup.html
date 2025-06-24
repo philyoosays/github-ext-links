@@ -3,75 +3,20 @@
 
 <head>
     <title>Browser Util</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="category.css">
+    <link rel="stylesheet" href="options.css">
 </head>
 
 <body>
     <h2>Browser Util</h2>
 
-    <div id="debug"></div>
-    
-    <div class="option-group no-border">
-        <div class="option-group-title">External Links</div>
-        <div class="option">
-            <div class="switch" id="enabled">
-                <input type="checkbox" id="enabledInput">
-                <span class="slider"></span>
-            </div>
-            <span>Open external links in new tabs</span>
-        </div>
-    </div>
-    
-    <div class="option-group">
-        <div class="option-group-title">Tab Organization</div>
-        <div class="option">
-            <div class="switch" id="tabGrouping">
-                <input type="checkbox" id="tabGroupingInput">
-                <span class="slider"></span>
-            </div>
-            <span>Group tabs with source tab</span>
-        </div>
-        <div class="option" id="renameGroup">
-            <p>Rename Group</p>
-            <select class="selector" id="renameGroupSelect">
-            </select>
-        </div>
-        <div>
-            <div class="option" id="naming">
-                <span>Name Groups By</span>
-                <select class="selector" id="groupNamingSelect">
-                    <option value="url_ext">url ext</option>
-                    <option value="tab_title">tab title</option>
-                </select>
-            </div>
-            <div id="group-name-example"></div>
-        </div>
-    </div>
-
-    <div class="option-group">
-        <div class="option-group-title">Tab Cleanup</div>
-        <div class="option">
-            <button class="button" id="clearNowBtn">Clear Now</button>
-        </div>
-        <div class="option vertical">
-            <div class="option">
-                <span class="adjacent">Host</span>
-                <div>
-                    <div class="option">
-                        <input type="text" class="selector" id="autoClearHost">
-                        <button class="button adjacent" id="addHostToClearBtn">+</button>
-                    </div>
-                </div>
-            </div>
-            <div id="hostsToClear"></div>
-        </div>
-    </div>
-
-    <div id="status" class="status"></div>
+    <div id="root"></div>
 
     <script src="js/env.js"></script>
-    <script src="js/popup.js"></script>
-    <script src="js/debug.js"></script>
+    <script src="plugins/debug/popup.js"></script>
+    <script src="plugins/github/popup.js"></script>
+    <script src="plugins/tabGroup/popup.js"></script>
+    <script src="plugins/tabOrganization/popup.js"></script>
 </body>
 
 </html>

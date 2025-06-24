@@ -38,11 +38,21 @@
       ],
       "js": [
         "js/env.js",
-        "js/content.js"
+        "plugins/github/content.js"
       ]
     }
   ],
   "background": {
-    "service_worker": "js/background.js"
-  }
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "plugins/debug/background.js",
+        "plugins/github/background.js",
+        "plugins/tabGroup/background.js"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }
