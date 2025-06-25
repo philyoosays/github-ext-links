@@ -8,7 +8,7 @@
 .option-group {
     width: 100%;
     margin-bottom: 1rem;
-    padding-top: 15px;
+    /* padding-top: 15px; */
     display: flex;
     flex-direction: column;
 }
