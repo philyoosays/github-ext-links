@@ -5,6 +5,7 @@
     'githubTimestamps',
     'githubTimestampsOnlyPRs',
     'githubTimestampsFormat',
+    'githubTimestampsNoRelative',
   ]);
 
   openExternalInNewTab()
@@ -23,7 +24,7 @@
 chrome.storage.onChanged.addListener((changes, namespace) => {
   if (namespace !== 'sync') return
   Object.keys(changes).forEach((key) => {
-    if (key !== 'githubTimestamps') return
+    if (!key.startsWith('githubTimestamps')) return
     replaceTimestamps()
   });
 });
@@ -85,8 +86,11 @@ function replaceTimestamps() {
         replacement.classList.add('ghext-datetime-field');
         replacement.setAttribute('datetime', isoDateTime);
         replacement.setAttribute('rel_datetime', relativeTime);
-        replacement.textContent = `${textContent} (${relativeTime})`;
         replacement.title = `${isoDateTime} (${relativeTime})`;
+        replacement.textContent = textContent;
+        if (!STATE.githubTimestampsNoRelative) {
+          replacement.textContent += ` (${relativeTime})`
+        }
 
         element.parentElement.replaceChild(replacement, element)
       })

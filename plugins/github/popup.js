@@ -7,6 +7,7 @@ const defaultTimestampFormat = 'MMM dd, yyyy, h:mm a zzz';
         githubTimestamps: true,
         githubTimestampsOnlyPRs: true,
         githubTimestampsFormat: defaultTimestampFormat,
+        githubTimestampsNoRelative: false,
     })
 
     addTimestampFormatExample()
@@ -22,6 +23,9 @@ const defaultTimestampFormat = 'MMM dd, yyyy, h:mm a zzz';
 
     const timestampFormatInput = document.getElementById('gh-timestamps-format-input')
     timestampFormatInput.value = STATE.githubTimestampsFormat;
+
+    const timestampNoRelInput = document.getElementById('gh-timestamps-norel-input')
+    timestampNoRelInput.checked = STATE.githubTimestampsNoRelative;
 
     document.getElementById('gh-ext-links').addEventListener('click', (e) => {
         const enabledInput = e.target.parentElement.childNodes[1];
@@ -47,6 +51,13 @@ const defaultTimestampFormat = 'MMM dd, yyyy, h:mm a zzz';
             .then(() => addTimestampFormatExample())
     });
 
+    document.getElementById('gh-timestamps-norel').addEventListener('click', (e) => {
+        const enabledInput = e.target.parentElement.childNodes[1];
+        chrome.storage.sync.set({ githubTimestampsNoRelative: !enabledInput.checked })
+            .then(() => enabledInput.checked = !enabledInput.checked)
+            .then(() => addTimestampFormatExample())
+    });
+
     console.log('Plugin: Github popup loaded');
 })();
 
@@ -67,6 +78,10 @@ async function addTimestampFormatExample() {
     pTagLabel.textContent = 'Example:';
     pTagValue.classList.add('example-text');
     pTagValue.textContent = formattedDate;
+
+    if (!STATE.githubTimestampsNoRelative) {
+        pTagValue.textContent += ' (now)';
+    }
 
     tsFormatExampleElem.appendChild(pTagLabel);
     tsFormatExampleElem.appendChild(pTagValue);
