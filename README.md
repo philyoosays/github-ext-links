@@ -36,6 +36,7 @@ Modifies the timestamps on github to include date and time.
 - **Date Formatting**: Select the date format
 
 _Default Format_: `MMM dd, yyyy, h:mm a zzz`
+
 **Accepted formats**:
 | Token | Example | Description |
 | ----- | ------- | ----------- |
