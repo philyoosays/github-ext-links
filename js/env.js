@@ -117,4 +117,54 @@ async function loadState(defaultStateOrKeys) {
     STATE = { ...STATE, ...savedState, ...newKeys }
 }
 
+/**
+ * 
+ * HELPER FUNCTIONS
+ * 
+ */
+
+function formatDate(date, format) {
+    const dateObj = new Date(date);
+
+    const formatMap = {
+        'yyyy': { year: 'numeric' },
+        'yy': { year: '2-digit' },
+        'MMMM': { month: 'long' },
+        'MMM': { month: 'short' },
+        'MM': { month: '2-digit' },
+        'M': { month: 'numeric' },
+        'dd': { day: '2-digit' },
+        'd': { day: 'numeric' },
+        'HH': { hour: '2-digit', hour12: false },
+        'H': { hour: 'numeric', hour12: false },
+        'hh': { hour: '2-digit', hour12: true },
+        'h': { hour: 'numeric', hour12: true },
+        'mm': { minute: '2-digit' },
+        'ss': { second: '2-digit' },
+        'a': { hour: '2-digit', hour12: true },
+        'zzz': { timeZoneName: 'short' },
+        'z': { timeZoneName: 'short' }
+    };
+
+    const formatTokens = Object.keys(formatMap).join('|')
+    const regexp = new RegExp(`(${formatTokens})`)
+
+    const tokenSplit = format.split(regexp).map(token => {
+        const option = formatMap[token]
+        if (!option) return token
+        const formatted = new Intl.DateTimeFormat('en-US', option).format(dateObj);
+        if (['hh', 'h'].includes(token)) {
+            return formatted.split(' ')[0]
+        }
+        if (['a','zzz','z'].includes(token)) {
+            return formatted.split(' ')[1]
+        }
+        return formatted
+    }).join('').trim()
+   
+    return tokenSplit
+}
+
+
+
 console.log('loaded env')
