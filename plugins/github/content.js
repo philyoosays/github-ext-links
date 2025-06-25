@@ -6,6 +6,7 @@
     'githubTimestampsOnlyPRs',
     'githubTimestampsFormat',
     'githubTimestampsNoRelative',
+    'githubTimestampsAbbrevRelative',
   ]);
 
   openExternalInNewTab()
@@ -89,7 +90,11 @@ function replaceTimestamps() {
         replacement.title = `${isoDateTime} (${relativeTime})`;
         replacement.textContent = textContent;
         if (!STATE.githubTimestampsNoRelative) {
-          replacement.textContent += ` (${relativeTime})`
+          let fmtRelativeTime = ` (${relativeTime})`
+          if (STATE.githubTimestampsAbbrevRelative) {
+            fmtRelativeTime = ` (${abbreviateRelative(relativeTime)})`
+          }
+          replacement.textContent += fmtRelativeTime
         }
 
         element.parentElement.replaceChild(replacement, element)

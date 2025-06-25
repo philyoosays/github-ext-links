@@ -8,6 +8,7 @@ const defaultTimestampFormat = 'MMM dd, yyyy, h:mm a zzz';
         githubTimestampsOnlyPRs: true,
         githubTimestampsFormat: defaultTimestampFormat,
         githubTimestampsNoRelative: false,
+        githubTimestampsAbbrevRelative: true,
     })
 
     addTimestampFormatExample()
@@ -26,6 +27,9 @@ const defaultTimestampFormat = 'MMM dd, yyyy, h:mm a zzz';
 
     const timestampNoRelInput = document.getElementById('gh-timestamps-norel-input')
     timestampNoRelInput.checked = STATE.githubTimestampsNoRelative;
+
+    const timestampAbbrevRelInput = document.getElementById('gh-timestamps-abbrevrel-input')
+    timestampAbbrevRelInput.checked = STATE.githubTimestampsAbbrevRelative;
 
     document.getElementById('gh-ext-links').addEventListener('click', (e) => {
         const enabledInput = e.target.parentElement.childNodes[1];
@@ -54,6 +58,13 @@ const defaultTimestampFormat = 'MMM dd, yyyy, h:mm a zzz';
     document.getElementById('gh-timestamps-norel').addEventListener('click', (e) => {
         const enabledInput = e.target.parentElement.childNodes[1];
         chrome.storage.sync.set({ githubTimestampsNoRelative: !enabledInput.checked })
+            .then(() => enabledInput.checked = !enabledInput.checked)
+            .then(() => addTimestampFormatExample())
+    });
+
+    document.getElementById('gh-timestamps-abbrevrel').addEventListener('click', (e) => {
+        const enabledInput = e.target.parentElement.childNodes[1];
+        chrome.storage.sync.set({ githubTimestampsAbbrevRelative: !enabledInput.checked })
             .then(() => enabledInput.checked = !enabledInput.checked)
             .then(() => addTimestampFormatExample())
     });
