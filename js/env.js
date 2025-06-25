@@ -190,6 +190,9 @@ function formatDate(date, format) {
         if (['a','zzz','z'].includes(token)) {
             return formatted.split(' ')[1]
         }
+        if (['mm','ss'].includes(token)) {
+            return formatted.padStart(2, '0')
+        }
         return formatted
     }).join('').trim()
    
