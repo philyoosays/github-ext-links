@@ -25,6 +25,48 @@ Modifies the timestamps on github to include date and time.
 
 - **Enable**: Disable or enable the feature
 - **Only For PRs**: Only works when url includes `/pull/`
+- **Date Formatting**: Select the date format
+
+Default Format `MMM dd, yyyy, h:mm a zzz`
+Accepted formats:
+```md
+yyyy (Full year, e.g., 2025)
+yy (Two-digit year, e.g., 25)
+
+MMMM (Full month name, e.g., June)
+MMM (Abbreviated month name, e.g., Jun)
+MM (Two-digit month, e.g., 06)
+M (Numeric month, e.g., 6)
+
+dd (Two-digit day, e.g., 24)
+d (Numeric day, e.g., 24)
+
+hh (12-hour format, two digits, e.g., 04)
+h (12-hour format, e.g., 4)
+HH (24-hour format, two digits, e.g., 14)
+H (24-hour format, e.g., 14)
+
+mm (Two-digit minutes, e.g., 15)
+ss (Two-digit seconds, e.g., 30)
+
+a (AM/PM marker)
+
+zzz (Time zone abbreviation, e.g., EDT)
+z (Time zone abbreviation)
+```
+Examples of Accepted Formats:
+```md
+yyyy-MM-dd (2025-06-24)
+dd-MM-yyyy (24-06-2025)
+MM/dd/yyyy (06/24/2025)
+dd/MM/yyyy (24/06/2025)
+yyyy-MM-dd HH:mm:ss (2025-06-24 14:15:30)
+dd-MM-yyyy hh:mm:ss a (24-06-2025 02:15:30 PM)
+MMM dd, yyyy (Jun 24, 2025)
+MMMM dd, yyyy (June 24, 2025)
+MMM dd, yyyy, hh:mm a (Jun 24, 2025, 02:15 PM)
+MMM dd, yyyy, h:mm a zzz (Jun 24, 2025, 2:15 PM EDT)
+```
 
 ### Tab Grouping
 Opens new tabs grouped together with the originating tab and names the tabs intelligently. It is based on the source tab.

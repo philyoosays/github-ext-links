@@ -109,3 +109,20 @@ input:checked+.slider:before {
 .button:hover {
     background-color: #0056b3;
 }
+
+.option-input {
+    width: 100%;
+    padding: 0.25rem;
+    margin-left: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #333;
+    color: #fff;
+    font-size: 12px;
+}
+
+.example-text {
+    font-size: 12px;
+    color: #999;
+    margin: 0;
+}
