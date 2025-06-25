@@ -123,6 +123,14 @@ async function loadState(defaultStateOrKeys) {
  * 
  */
 
+function abbreviateRelative(relative) {
+  let result = relative
+  result = result.replace('second', 'sec')
+  result = result.replace('minute', 'min')
+  result = result.replace('hour', 'hr')
+  return result
+}
+
 function formatDate(date, format) {
     const dateObj = new Date(date);
 
@@ -171,7 +179,6 @@ function formatDate(date, format) {
         const option = formatMap[token]
         if (!option) return token
         if (['DDD','DD','D'].includes(token)) {
-            console.log(option)
             const dayOfWeek =  dateObj.getDay()
             return option[dayOfWeek]
         }
