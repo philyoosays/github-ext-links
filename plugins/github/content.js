@@ -1,4 +1,9 @@
 
+const GH_LOCAL = {
+  timelineLength: 0,
+  parsedTimeline: {},
+};
+
 (async () => {
   await loadState([
     'githubExtLinks',
@@ -10,15 +15,13 @@
   ]);
 
   openExternalInNewTab()
-  parseComments()
   
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       if (mutation.type !== 'childList') return
-      // debounce(parseComments, 100)
       replaceTimestamps()
-      // slashCommandMenu()
-      // downloadClonedElementAsHtml()
+      parseComments()
+      slashCommandMenu()
     }
   });
   observer.observe(document.body, { childList: true, subtree: true });
@@ -107,124 +110,21 @@ function replaceTimestamps() {
   }
 }
 
-let cloneCount = 0
-
-function downloadClonedElementAsHtml() {
-  const slashCommandMenu = document.querySelector('.js-slash-command-menu');
-  if (!slashCommandMenu) return
-
-  cloneCount++
-  if (cloneCount > 1) return
-  // Get the source element
-  let sourceElement = slashCommandMenu
-
-  if (!sourceElement) {
-    console.error('Source element not found!');
-    return;
-  }
-
-  // Clone the source element. This will create a deep copy of the element and its descendants.
-  let clonedElement = sourceElement.cloneNode(true);
-
-  // Create a new HTML document
-  let newDoc = document.implementation.createHTMLDocument('New Document');
-
-  // Copy the current document's styles and links to the new document
-  let head = newDoc.head;
-  Array.from(document.head.getElementsByTagName('style')).forEach(style => {
-    head.appendChild(style.cloneNode(true));
-  });
-  Array.from(document.head.getElementsByTagName('link')).forEach(link => {
-    head.appendChild(link.cloneNode(true));
-  });
-
-  // Add the basic structure to the new document's body along with the cloned element
-  newDoc.body.appendChild(clonedElement);
-
-  // Create a Blob containing the new document's HTML
-  let htmlBlob = new Blob([newDoc.documentElement.outerHTML], { type: 'text/html' });
-
-  // Create a link element for downloading the file manually
-  let downloadLink = document.createElement('a');
-  downloadLink.href = URL.createObjectURL(htmlBlob);
-  downloadLink.download = 'newDocument.html';  // Set the name of the downloaded file
-
-  // Append the link to the document
-  document.body.appendChild(downloadLink);
-
-  // Request user to click the link manually
-  downloadLink.textContent = 'Click to download the cloned document';
-  downloadLink.style.display = 'block';
-  downloadLink.style.margin = '20px';
-  downloadLink.style.fontSize = '20px';
-  downloadLink.style.color = 'blue';
-  downloadLink.style.cursor = 'pointer';
-
-  const container = document.querySelector('.js-discussion')
-  container.appendChild(downloadLink);
-}
-function createClone () {
-
-  const slashCommandMenu = document.querySelector('.js-slash-command-menu');
-  if (!slashCommandMenu) return
-
-  cloneCount++
-  if (cloneCount > 1) return
-  // Get the source element
-
-  // Clone the source element. This will create a deep copy of the element and its descendants.
-  let clonedElement = slashCommandMenu.cloneNode(true);
-
-  // Create a new HTML document
-  let newDoc = document.implementation.createHTMLDocument('New Document');
-
-  // Copy the current document's styles and links to the new document
-  let head = newDoc.head;
-  Array.from(document.head.getElementsByTagName('style')).forEach(style => {
-    head.appendChild(style.cloneNode(true));
-  });
-  Array.from(document.head.getElementsByTagName('link')).forEach(link => {
-    head.appendChild(link.cloneNode(true));
-  });
-
-  newDoc.body.style.colorScheme = 'dark'
-  newDoc.body.style.backgroundColor = 'rgb(13, 17, 23)'
-  newDoc.body.style.color = 'rgb(240, 246, 252)'
-
-  // Add the basic structure to the new document's body along with the cloned element
-  newDoc.body.appendChild(clonedElement);
-
-  // Optionally, launch a new window with the new document
-  let newWindow = window.open();
-  newWindow.document.write(newDoc.documentElement.outerHTML);
-  newWindow.document.close();
-
-  // Create a Blob containing the new document's HTML
-  let htmlBlob = new Blob([newDoc.documentElement.outerHTML], { type: 'text/html' });
-
-  // Create a link element for downloading the file
-  let downloadLink = document.createElement('a');
-  downloadLink.href = URL.createObjectURL(htmlBlob);
-  downloadLink.download = 'newDocument.html';  // Set the name of the downloaded file
-
-  // Append the link to the document, trigger a click on it, and then remove it
-  document.body.appendChild(downloadLink);
-  downloadLink.click();
-  document.body.removeChild(downloadLink);
-}
-
-function parseComments() {
+function parseComments(isSlashCommandMenu) {
+  const isGithub = window.location.href.startsWith('https://github.com/')
+  const isPR = window.location.href.includes('/pull/')
+  if (!isGithub || !isPR) return;
+  
   const timeLineItems = document.querySelectorAll('.TimelineItem.js-comment-container')
-  // console.log(timeLineItems)
+  if (!timeLineItems.length) return
+  if (!isSlashCommandMenu && GH_LOCAL.timelineLength === timeLineItems.length) return
+  GH_LOCAL.timelineLength = timeLineItems.length
 
-  // const dunno = timeLineItems[timeLineItems.length - 2]
-  // console.log(dunno.textContent)
-  // console.log(dunno.innerText)
-  // console.log(dunno.textContent.replace(/\n/g, ' '))
-  // const slashCmd = /(?:`| |\n)\/([a-zA-Z]+)/g.exec(dunno.textContent)
-  // console.log(slashCmd)
-
-  const parsedTimeline = []
+  const parsedTimeline = {
+    recentSuggestions: [],
+    legend: {},
+    timeline: [],
+  }
   /**
    * {
    *  author: string,
@@ -248,7 +148,6 @@ function parseComments() {
   timeLineItems.forEach((item) => {
     const timelineObj = {}
     const header = item.querySelector('.timeline-comment-header')
-    // console.log(header.textContent.replace(/\n/g, ' '))
     const author = parseAuthorByHeader(header.innerText.replace(/\n/g, ' ').trim().split(' '))
     timelineObj.author = author
     timelineObj.debug = {
@@ -271,47 +170,55 @@ function parseComments() {
       innerText: commentBody.innerText.trim()
     }
 
-    const slashCmd = commentBody.textContent.matchAll(/(?: |\n)(\/[a-zA-Z]+)/gm)
+    timelineObj.slashCommandLegend = timelineObj.comment.raw.includes('Click here for all available commands.')
+    const slashCmd = commentBody.textContent.matchAll(/(?: |\n)(\/[a-zA-Z]+)(?: |\n)(.+)(?: |\n)/gm)
     timelineObj.slashCommands = []
     for (const cmd of slashCmd) {
-      timelineObj.slashCommands.push(cmd[1])
+      timelineObj.slashCommands.push(cmd[1].trim())
+      if (timelineObj.slashCommandLegend) {
+        parsedTimeline.legend[cmd[1].trim()] = cmd[2].trim()
+      }
     }
+    timelineObj.slashCommands = [ ...new Set(timelineObj.slashCommands) ]
 
-    timelineObj.slashCommandLegend = timelineObj.comment.raw.includes('Click here for all available commands.')
-
-    // console.log(commentBody.textContent)
-    // console.log(commentBody.innerText)
     const isSameCmd = timelineObj.slashCommands.length > 1 && timelineObj.slashCommands.every(cmd => cmd === timelineObj.slashCommands[0])
     if (isSameCmd && timelineObj.isArgo && commentBody.innerText.includes('request by')) {
       timelineObj.slashCommandAck = commentBody.innerText.includes('was processed')
       timelineObj.slashCommandAckText = commentBody.innerText.replace(timelineObj.slashCommands[0], '').trim()
     }
-    // const { author: auth, isArgo, slashCommandLegend, slashCommands, slashCommandAck, slashCommandAckText } = timelineObj
-    // console.log({ auth, isArgo, slashCommandLegend, slashCommandAck, slashCommandAckText })  
-    parsedTimeline.push(timelineObj)
+    parsedTimeline.timeline.push(timelineObj)
+    if (
+      timelineObj.isArgo &&
+      !timelineObj.slashCommandLegend &&
+      !timelineObj.slashCommandAck &&
+      timelineObj.slashCommands.length > 0
+    ) {  
+      parsedTimeline.recentSuggestions = timelineObj.slashCommands
+    }
+    if (!timelineObj.isArgo && timelineObj.slashCommands.length === 1) {
+      parsedTimeline.recentSuggestions = []
+    }
   })
-  console.log(parsedTimeline)
+  if (!isSlashCommandMenu) console.log('Parsed Timeline', parsedTimeline)
+  GH_LOCAL.parsedTimeline = parsedTimeline
+  return parsedTimeline
 }
-
-let count = 0
 
 async function slashCommandMenu() {
   const slashCommandMenu = document.querySelector('.js-slash-command-menu');
+  const existingNewMenu = document.getElementById('ghext-pcln-slash-menu')
 
-  if (!slashCommandMenu) return
-  count++
-  if (count > 1) return
+  if (!slashCommandMenu || existingNewMenu) return
 
   slashCommandMenu.style.display = 'flex'
   slashCommandMenu.style.visibility = 'visible'
   slashCommandMenu.style.opacity = '1'
 
   const slashCommandModal = slashCommandMenu.children[0]
-  const slashMenuHeader = slashCommandMenu.querySelector('header.SelectMenu-header')
 
   const container = document.createElement('div')
   container.id = 'ghext-new-container'
-  container.style.border = '4px solid red'
+  // container.style.border = '4px solid red'
   container.style.display = 'flex'
 
   const newMenu = buildSlashCommandMenu()
@@ -320,11 +227,10 @@ async function slashCommandMenu() {
   container.appendChild(slashCommandModal)
 
   slashCommandMenu.replaceChildren(container)
-  debugger
-  // alert('hello')
 }
 
 function buildSlashCommandMenu() {
+  const parsedTimeline = parseComments(true)
   const newMenu = document.createElement('div')
   newMenu.id = 'ghext-pcln-slash-menu'
   newMenu.classList.add('SelectMenu-modal')
@@ -345,16 +251,13 @@ function buildSlashCommandMenu() {
   const slashMenuHeader = document.querySelector('.js-slash-command-menu header.SelectMenu-header')
   const slashMenuHeaderCopy = slashMenuHeader.cloneNode(true)
   const slashMenuHeaderText = slashMenuHeaderCopy.querySelector('#slash-commands-title')
-  slashMenuHeaderText.textContent = 'PCLN Slash Commands'
+  if (slashMenuHeaderText) slashMenuHeaderText.textContent = 'PCLN Slash Commands'
   slashMenuHeaderCopy.style.height = '36px'
   // slashMenuHeaderCopy.style.boxSizing = 'border-box'
 
-  console.log(slashMenuHeaderCopy.children[slashMenuHeaderCopy.children.length - 1])
   const lastHeaderChild = slashMenuHeaderCopy.children[slashMenuHeaderCopy.children.length - 1]
-  slashMenuHeaderCopy.removeChild(lastHeaderChild)
+  if (lastHeaderChild) slashMenuHeaderCopy.removeChild(lastHeaderChild)
 
-  
-  
   const availableCmdHeader = document.createElement('div')
   availableCmdHeader.classList.add('SelectMenu-divider')
   availableCmdHeader.classList.add('js-group-divider')
@@ -362,34 +265,59 @@ function buildSlashCommandMenu() {
   // availableCmdHeader.style.boxSizing = 'border-box'
   availableCmdHeader.style.width = '100%'
   availableCmdHeader.style.height = '25px'
-  
+
   newMenu.appendChild(slashMenuHeaderCopy)
   newMenu.appendChild(availableCmdHeader)
+
+  const slashCmds = [...new Set([
+    ...parsedTimeline.recentSuggestions,
+    '/retryGates',
+    ...Object.keys(parsedTimeline.legend),
+  ])]
+
+  slashCmds.forEach((cmd, idx) => {
+    const commandBox = document.createElement('div');
+    commandBox.role = 'option';
+    commandBox.classList.add('SelectMenu-item');
+    commandBox.classList.add('slash-command-menu-item');
+    commandBox.style.flexDirection = 'column';
+    commandBox.style.alignItems = 'flex-start';
+    if (idx < parsedTimeline.recentSuggestions.length) {
+      commandBox.style.backgroundColor = '#1f6feb';
+    }
+    
+    const commandText = document.createElement('h5');
+    commandText.textContent = cmd
+    const commandDesc = document.createElement('span');
+    commandDesc.classList.add('command-description');
+    if (parsedTimeline.recentSuggestions.includes(cmd)) {
+      commandDesc.textContent = parsedTimeline.legend[cmd]
+    }
+    commandBox.appendChild(commandText)
+    commandBox.appendChild(commandDesc)
+
+    commandBox.addEventListener('click', (e) => {
+      const textarea = document.querySelector('textarea.js-comment-field');
+      textarea.value = cmd
+      document.querySelector('.js-slash-command-menu').remove()
+    })
+
+    commandBox.addEventListener('mouseover', (e) => {
+      commandDesc.textContent = parsedTimeline.legend[cmd]
+    })
+
+    commandBox.addEventListener('mouseout', (e) => {
+      commandDesc.textContent = ''
+    })
+
+    newMenu.appendChild(commandBox)
+  })
   
-  // newMenu.innerHTML = `
-  //   <div>
-  //     <span>Hello</span>
-  //   </div>
-  // `
   return newMenu
 }
 
 function parseAuthorByHeader(headerText) {
-  // return headerText.filter(s => (
-  //   !['author', 'bot', 'commented'].includes(s.toLowerCase())
-  // ))[0]
-  // console.log(headerText)
   const idx = headerText.findIndex(s => ['bot','commented'].includes(s.toLowerCase()))
-  // console.log(idx)
-  // console.log(headerText[idx - 1])
   return headerText[idx - 1]
-}
-
-function debounce(func, wait) {
-  let timeout;
-  return function(...args) {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
 }
 
