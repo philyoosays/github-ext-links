@@ -12,6 +12,7 @@ const GH_LOCAL = {
     'githubTimestampsFormat',
     'githubTimestampsNoRelative',
     'githubTimestampsAbbrevRelative',
+    'githubSlashCommands',
   ]);
 
   openExternalInNewTab()
@@ -111,6 +112,8 @@ function replaceTimestamps() {
 }
 
 function parseComments(isSlashCommandMenu) {
+  if (!STATE.githubSlashCommands) return;
+
   const isGithub = window.location.href.startsWith('https://github.com/')
   const isPR = window.location.href.includes('/pull/')
   if (!isGithub || !isPR) return;
@@ -120,13 +123,19 @@ function parseComments(isSlashCommandMenu) {
   if (!isSlashCommandMenu && GH_LOCAL.timelineLength === timeLineItems.length) return
   GH_LOCAL.timelineLength = timeLineItems.length
 
+  const parseAuthorByHeader = (headerText) => {
+    const idx = headerText.findIndex(s => ['bot','commented'].includes(s.toLowerCase()))
+    return headerText[idx - 1]
+  }
+
   const parsedTimeline = {
     recentSuggestions: [],
     legend: {},
     timeline: [],
+    debug: {},
   }
   /**
-   * {
+   * TimelineItem {
    *  author: string,
    *  isArgo: string,
    *  date: Date,
@@ -148,28 +157,38 @@ function parseComments(isSlashCommandMenu) {
   timeLineItems.forEach((item) => {
     const timelineObj = {}
     const header = item.querySelector('.timeline-comment-header')
+    /**
+     * Author
+     */
     const author = parseAuthorByHeader(header.innerText.replace(/\n/g, ' ').trim().split(' '))
     timelineObj.author = author
-    timelineObj.debug = {
-      authorParse: 'innerText'
-    }
+    timelineObj.debug.authorParse = 'innerText'
     if (!author) {
       const textContentText = header.textContent.replace(/\n/g, ' ').split(' ').filter(Boolean)
       timelineObj.author = parseAuthorByHeader(textContentText)
       timelineObj.debug.authorParse = 'textContent'
     }
+    /**
+     * isArgo
+     */
     timelineObj.isArgo = timelineObj.author.includes('pcln-argo')
-
+    /**
+     * Date
+     */
     const dateElem = header.querySelector('a.js-timestamp').firstChild
     timelineObj.date = new Date(dateElem.getAttribute('datetime'))
-
+    /**
+     * Comment Body
+     */
     const commentBody = item.querySelector('.comment-body, .markdown-body, .js-comment-body')
     timelineObj.comment = {
       raw: commentBody.textContent.replace(/\n{3,}/g, '\n\n').trim(),
       parsed: commentBody.textContent.replace(/\n/g, ' ').trim(),
       innerText: commentBody.innerText.trim()
     }
-
+    /**
+     * Slash Commands
+     */
     timelineObj.slashCommandLegend = timelineObj.comment.raw.includes('Click here for all available commands.')
     const slashCmd = commentBody.textContent.matchAll(/(?: |\n)(\/[a-zA-Z]+)(?: |\n)(.+)(?: |\n)/gm)
     timelineObj.slashCommands = []
@@ -180,13 +199,19 @@ function parseComments(isSlashCommandMenu) {
       }
     }
     timelineObj.slashCommands = [ ...new Set(timelineObj.slashCommands) ]
-
+    /**
+     * Slash Command Acknowledgement
+     */
     const isSameCmd = timelineObj.slashCommands.length > 1 && timelineObj.slashCommands.every(cmd => cmd === timelineObj.slashCommands[0])
     if (isSameCmd && timelineObj.isArgo && commentBody.innerText.includes('request by')) {
       timelineObj.slashCommandAck = commentBody.innerText.includes('was processed')
       timelineObj.slashCommandAckText = commentBody.innerText.replace(timelineObj.slashCommands[0], '').trim()
     }
+
     parsedTimeline.timeline.push(timelineObj)
+    /**
+     * Recent Suggestions
+     */
     if (
       timelineObj.isArgo &&
       !timelineObj.slashCommandLegend &&
@@ -199,125 +224,186 @@ function parseComments(isSlashCommandMenu) {
       parsedTimeline.recentSuggestions = []
     }
   })
+
   if (!isSlashCommandMenu) console.log('Parsed Timeline', parsedTimeline)
   GH_LOCAL.parsedTimeline = parsedTimeline
   return parsedTimeline
 }
 
-async function slashCommandMenu() {
-  const slashCommandMenu = document.querySelector('.js-slash-command-menu');
-  const existingNewMenu = document.getElementById('ghext-pcln-slash-menu')
+function slashCommandMenu() {
+  if (!STATE.githubSlashCommands) return
 
-  if (!slashCommandMenu || existingNewMenu) return
+  const slashCommandMenu = document.querySelector('.js-slash-command-menu');
+  if (!slashCommandMenu) return
+
+  const existingPCLNMenu = document.getElementById('ghext-pcln-slash-menu')
+  if (existingPCLNMenu) {
+    const existingSlashCmdList = existingPCLNMenu.getAttribute('data-slash-cmd-list')
+    const { slashCmds, slashCmdNodes } = createPCLNMenu_slashCmds();
+    if (existingSlashCmdList === slashCmds.join(',')) return
+
+    const existingSlashCmds = existingPCLNMenu.querySelectorAll('.pcln-slash-command-menu-item')
+    existingSlashCmds.forEach(child => existingPCLNMenu.remove(child))
+
+    slashCmdNodes.forEach(cmd => existingPCLNMenu.appendChild(cmd));
+    return
+  }
 
   slashCommandMenu.style.display = 'flex'
   slashCommandMenu.style.visibility = 'visible'
   slashCommandMenu.style.opacity = '1'
 
-  const slashCommandModal = slashCommandMenu.children[0]
+  const pclnMenu = buildPCLNMenu()
+  const githubMenu = slashCommandMenu.children[0]
 
   const container = document.createElement('div')
   container.id = 'ghext-new-container'
-  // container.style.border = '4px solid red'
   container.style.display = 'flex'
-
-  const newMenu = buildSlashCommandMenu()
-
-  container.appendChild(newMenu)
-  container.appendChild(slashCommandModal)
+  
+  container.appendChild(pclnMenu)
+  container.appendChild(githubMenu)
 
   slashCommandMenu.replaceChildren(container)
 }
 
-function buildSlashCommandMenu() {
-  const parsedTimeline = parseComments(true)
-  const newMenu = document.createElement('div')
-  newMenu.id = 'ghext-pcln-slash-menu'
-  newMenu.classList.add('SelectMenu-modal')
+function buildPCLNMenu() {
+  const pclnMenuHeader = createPCLNMenu_header()
+  const cat_availableCommands = createPCLNMenu_category('Available Commands')
+  
+  const pclnMenu = createPCLNMenu_container()
+  pclnMenu.appendChild(pclnMenuHeader)
+  pclnMenu.appendChild(cat_availableCommands)
+  
+  const { slashCmds, slashCmdNodes } = createPCLNMenu_slashCmds();
+  pclnMenu.setAttribute('data-slash-cmd-list', slashCmds.join(','));
+  slashCmdNodes.forEach(cmd => pclnMenu.appendChild(cmd));
 
-  newMenu.style.width = '300px'
-  newMenu.style.border = '1px solid rgb(61, 68, 77)'
-  newMenu.style.borderRadius = '6px'
-  newMenu.style.backgroundColor = 'rgb(13, 17, 23)'
-  // newMenu.style.padding = '5px 0px'
-  newMenu.style.marginTop = '8px'
-  newMenu.style.marginBottom = '16px'
-  newMenu.style.marginRight = '8px'
-  newMenu.style.color = 'rgb(240, 246, 252)'
-  newMenu.style.colorScheme = 'dark'
-  newMenu.style.lineHeight = '21px'
-  newMenu.style.boxSizing = 'border-box'
+  return pclnMenu
+}
 
-  const slashMenuHeader = document.querySelector('.js-slash-command-menu header.SelectMenu-header')
-  const slashMenuHeaderCopy = slashMenuHeader.cloneNode(true)
-  const slashMenuHeaderText = slashMenuHeaderCopy.querySelector('#slash-commands-title')
+function createPCLNMenu_header() {
+  const ghSlashMenuHeader = document.querySelector('.js-slash-command-menu header.SelectMenu-header')
+  const slashMenuHeader = ghSlashMenuHeader.cloneNode(true)
+  const slashMenuHeaderText = slashMenuHeader.querySelector('#slash-commands-title')
   if (slashMenuHeaderText) slashMenuHeaderText.textContent = 'PCLN Slash Commands'
-  slashMenuHeaderCopy.style.height = '36px'
-  // slashMenuHeaderCopy.style.boxSizing = 'border-box'
+  slashMenuHeader.style.height = '36px'
 
-  const lastHeaderChild = slashMenuHeaderCopy.children[slashMenuHeaderCopy.children.length - 1]
-  if (lastHeaderChild) slashMenuHeaderCopy.removeChild(lastHeaderChild)
+  // Removes the Preview pill
+  const lastHeaderChild = slashMenuHeader.children[slashMenuHeader.children.length - 1];
+  if (lastHeaderChild) slashMenuHeader.removeChild(lastHeaderChild);
 
-  const availableCmdHeader = document.createElement('div')
-  availableCmdHeader.classList.add('SelectMenu-divider')
-  availableCmdHeader.classList.add('js-group-divider')
-  availableCmdHeader.innerText = 'Available Commands'
-  // availableCmdHeader.style.boxSizing = 'border-box'
-  availableCmdHeader.style.width = '100%'
-  availableCmdHeader.style.height = '25px'
+  return slashMenuHeader
+}
 
-  newMenu.appendChild(slashMenuHeaderCopy)
-  newMenu.appendChild(availableCmdHeader)
+function createPCLNMenu_category(categoryTitle) {
+  const menuCategory = document.createElement('div')
+
+  menuCategory.classList.add('SelectMenu-divider')
+  menuCategory.classList.add('js-group-divider')
+  
+  menuCategory.style.width = '100%'
+  menuCategory.style.height = '25px'
+
+  menuCategory.innerText = categoryTitle
+
+  return menuCategory
+}
+
+function createPCLNMenu_container() {
+  const pclnMenu = document.createElement('div')
+  pclnMenu.id = 'ghext-pcln-slash-menu'
+  pclnMenu.classList.add('SelectMenu-modal')
+
+  pclnMenu.style.width = '300px'
+  pclnMenu.style.border = '1px solid rgb(61, 68, 77)'
+  pclnMenu.style.borderRadius = '6px'
+  pclnMenu.style.backgroundColor = 'rgb(13, 17, 23)'
+  // pclnMenu.style.padding = '5px 0px'
+  pclnMenu.style.marginTop = '8px'
+  pclnMenu.style.marginBottom = '16px'
+  pclnMenu.style.marginRight = '8px'
+  pclnMenu.style.color = 'rgb(240, 246, 252)'
+  pclnMenu.style.colorScheme = 'dark'
+  pclnMenu.style.lineHeight = '21px'
+  pclnMenu.style.boxSizing = 'border-box'
+
+  return pclnMenu;
+}
+
+function createPCLNMenu_slashCmds() {
+  const parsedTimeline = parseComments(true);
 
   const slashCmds = [...new Set([
     ...parsedTimeline.recentSuggestions,
     '/retryGates',
     ...Object.keys(parsedTimeline.legend),
-  ])]
+  ])];
 
-  slashCmds.forEach((cmd, idx) => {
-    const commandBox = document.createElement('div');
-    commandBox.role = 'option';
-    commandBox.classList.add('SelectMenu-item');
-    commandBox.classList.add('slash-command-menu-item');
-    commandBox.style.flexDirection = 'column';
-    commandBox.style.alignItems = 'flex-start';
-    if (idx < parsedTimeline.recentSuggestions.length) {
-      commandBox.style.backgroundColor = '#1f6feb';
-    }
-    
-    const commandText = document.createElement('h5');
-    commandText.textContent = cmd
-    const commandDesc = document.createElement('span');
-    commandDesc.classList.add('command-description');
-    if (parsedTimeline.recentSuggestions.includes(cmd)) {
-      commandDesc.textContent = parsedTimeline.legend[cmd]
-    }
-    commandBox.appendChild(commandText)
-    commandBox.appendChild(commandDesc)
+  const slashCmdNodes = slashCmds.map((cmd, idx) => {
+    const commandItem = createPCLNMenu_slashCmdItem(idx, parsedTimeline);
+    const {
+      commandText,
+      commandDesc,
+    } = createPCLNMenu_slashCmdContent(cmd, parsedTimeline);
 
-    commandBox.addEventListener('click', (e) => {
-      const textarea = document.querySelector('textarea.js-comment-field');
-      textarea.value = cmd
-      document.querySelector('.js-slash-command-menu').remove()
-    })
+    commandItem.appendChild(commandText);
+    commandItem.appendChild(commandDesc);
 
-    commandBox.addEventListener('mouseover', (e) => {
-      commandDesc.textContent = parsedTimeline.legend[cmd]
-    })
+    createPCLNMenu_slashCmdListeners(
+      commandItem,
+      commandDesc,
+      cmd,
+      parsedTimeline
+    );
 
-    commandBox.addEventListener('mouseout', (e) => {
-      commandDesc.textContent = ''
-    })
-
-    newMenu.appendChild(commandBox)
+    return commandItem;
   })
-  
-  return newMenu
+
+  return { slashCmds, slashCmdNodes } 
 }
 
-function parseAuthorByHeader(headerText) {
-  const idx = headerText.findIndex(s => ['bot','commented'].includes(s.toLowerCase()))
-  return headerText[idx - 1]
+function createPCLNMenu_slashCmdItem(itemIdx, parsedTimeline) {
+  const commandItem = document.createElement('div');
+  commandItem.role = 'option';
+  commandItem.classList.add('SelectMenu-item');
+  commandItem.classList.add('slash-command-menu-item');
+  commandItem.classList.add('pcln-slash-command-menu-item');
+  commandItem.style.flexDirection = 'column';
+  commandItem.style.alignItems = 'flex-start';
+
+  // highlight recent suggestions
+  if (itemIdx < parsedTimeline.recentSuggestions.length) {
+    commandItem.style.backgroundColor = '#1f6feb';
+  }
+
+  return commandItem;
 }
 
+function createPCLNMenu_slashCmdContent(cmd, parsedTimeline) {
+  const commandText = document.createElement('h5');
+  commandText.textContent = cmd;
+
+  const commandDesc = document.createElement('span');
+  commandDesc.classList.add('command-description');
+  if (parsedTimeline.recentSuggestions.includes(cmd)) {
+    commandDesc.textContent = parsedTimeline.legend[cmd];
+  }
+
+  return { commandText, commandDesc };
+}
+
+function createPCLNMenu_slashCmdListeners(commandItem, commandDesc, cmd, parsedTimeline) {
+  commandItem.addEventListener('click', () => {
+    const textarea = document.querySelector('textarea.js-comment-field');
+    textarea.value = cmd
+    document.querySelector('.js-slash-command-menu').remove()
+  })
+
+  commandItem.addEventListener('mouseover', () => {
+    commandDesc.textContent = parsedTimeline.legend[cmd]
+  })
+
+  commandItem.addEventListener('mouseout', () => {
+    commandDesc.textContent = ''
+  })
+}
