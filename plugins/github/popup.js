@@ -9,12 +9,16 @@ const defaultTimestampFormat = 'MMM dd, yyyy, h:mm a zzz';
         githubTimestampsFormat: defaultTimestampFormat,
         githubTimestampsNoRelative: false,
         githubTimestampsAbbrevRelative: true,
+        githubSlashCommands: true,
     })
 
     addTimestampFormatExample()
 
     const extLinksInput = document.getElementById('gh-ext-links-input')
     extLinksInput.checked = STATE.githubExtLinks;
+
+    const slashCmdInput = document.getElementById('gh-slash-cmd-input')
+    slashCmdInput.checked = STATE.githubSlashCommands;
 
     const modTimestampsInput = document.getElementById('github-timestamps-input')
     modTimestampsInput.checked = STATE.githubTimestamps;
@@ -35,6 +39,18 @@ const defaultTimestampFormat = 'MMM dd, yyyy, h:mm a zzz';
         const enabledInput = e.target.parentElement.childNodes[1];
         chrome.storage.sync.set({ githubExtLinks: !enabledInput.checked })
             .then(() => enabledInput.checked = !enabledInput.checked)
+    });
+
+    document.getElementById('gh-slash-cmd').addEventListener('click', (e) => {
+        const enabledInput = e.target.parentElement.childNodes[1];
+        chrome.storage.sync.set({ githubSlashCommands: !enabledInput.checked })
+            .then(() => enabledInput.checked = !enabledInput.checked)
+            .then(() => {
+                if (enabledInput.checked) return
+                const pclnMenu = document.getElementById('ghext-pcln-slash-menu');
+                const container = document.getElementById('ghext-new-container');
+                container.removeChild(pclnMenu);
+            })
     });
 
     document.getElementById('github-timestamps').addEventListener('click', (e) => {
