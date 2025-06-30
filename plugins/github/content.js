@@ -2,6 +2,16 @@
 const GH_LOCAL = {
   timelineLength: 0,
   parsedTimeline: {},
+  pipelineTeam: [
+    'philyoosays',
+    'reilly3000',
+    'Abhishek-Kaudare',
+    'YashPatil0706',
+    'taemery',
+    'mparmarpcln',
+    'jerrymaxey',
+    'ab-gaikwad',
+  ]
 };
 
 (async () => {
@@ -129,12 +139,27 @@ function parseComments(isSlashCommandMenu) {
   }
 
   const parsedTimeline = {
+    loggedInUser: {
+      user: '',
+      isPipeline: false,
+    },
     recentSuggestions: [],
     legend: {},
     timeline: [],
     debug: {},
   }
+
+  const ghUserButtonSection = document.querySelector('.AppHeader-user');
+  const ghUserButton = ghUserButtonSection && ghUserButtonSection.querySelector('button.Button.Button--medium')
+  const ghUser = ghUserButton && ghUserButton.getAttribute('data-login')
+  if (ghUser) {
+    parsedTimeline.loggedInUser.user = ghUser
+    parsedTimeline.loggedInUser.isPipeline = GH_LOCAL.pipelineTeam.includes(ghUser)
+  }
+
   /**
+   * parsedTimeline.timeline
+   * 
    * TimelineItem {
    *  author: string,
    *  isArgo: string,
@@ -155,7 +180,7 @@ function parseComments(isSlashCommandMenu) {
    */
 
   timeLineItems.forEach((item) => {
-    const timelineObj = {}
+    const timelineObj = { debug: {} }
     const header = item.querySelector('.timeline-comment-header')
     /**
      * Author
@@ -190,7 +215,8 @@ function parseComments(isSlashCommandMenu) {
      * Slash Commands
      */
     timelineObj.slashCommandLegend = timelineObj.comment.raw.includes('Click here for all available commands.')
-    const slashCmd = commentBody.textContent.matchAll(/(?: |\n)(\/[a-zA-Z]+)(?: |\n)(.+)(?: |\n)/gm)
+    const textContent = commentBody.textContent.split(' to Rendered Manifests')[0]
+    const slashCmd = textContent.matchAll(/(?: |\n)(\/[a-zA-Z]+)(?: |\n)(.+)(?: |\n)/gm)
     timelineObj.slashCommands = []
     for (const cmd of slashCmd) {
       timelineObj.slashCommands.push(cmd[1].trim())
@@ -245,7 +271,7 @@ function slashCommandMenu() {
     const existingSlashCmds = existingPCLNMenu.querySelectorAll('.pcln-slash-command-menu-item')
     existingSlashCmds.forEach(child => existingPCLNMenu.remove(child))
 
-    slashCmdNodes.forEach(cmd => existingPCLNMenu.appendChild(cmd));
+    existingPCLNMenu.appendChild(slashCmdNodes);
     return
   }
 
@@ -276,7 +302,7 @@ function buildPCLNMenu() {
   
   const { slashCmds, slashCmdNodes } = createPCLNMenu_slashCmds();
   pclnMenu.setAttribute('data-slash-cmd-list', slashCmds.join(','));
-  slashCmdNodes.forEach(cmd => pclnMenu.appendChild(cmd));
+  pclnMenu.appendChild(slashCmdNodes);
 
   return pclnMenu
 }
@@ -314,7 +340,11 @@ function createPCLNMenu_container() {
   pclnMenu.id = 'ghext-pcln-slash-menu'
   pclnMenu.classList.add('SelectMenu-modal')
 
+  pclnMenu.style.display = 'inline-block'
+  // pclnMenu.style.flexDirection = 'column'
+
   pclnMenu.style.width = '300px'
+  pclnMenu.style.height = '320px'
   pclnMenu.style.border = '1px solid rgb(61, 68, 77)'
   pclnMenu.style.borderRadius = '6px'
   pclnMenu.style.backgroundColor = 'rgb(13, 17, 23)'
@@ -338,8 +368,12 @@ function createPCLNMenu_slashCmds() {
     '/retryGates',
     ...Object.keys(parsedTimeline.legend),
   ])];
+  
+  const slashCmdNodes = document.createElement('div');
+  slashCmdNodes.style.overflowY = 'scroll'
+  slashCmdNodes.style.height = '240px'
 
-  const slashCmdNodes = slashCmds.map((cmd, idx) => {
+  slashCmds.forEach((cmd, idx) => {
     const commandItem = createPCLNMenu_slashCmdItem(idx, parsedTimeline);
     const {
       commandText,
@@ -356,7 +390,7 @@ function createPCLNMenu_slashCmds() {
       parsedTimeline
     );
 
-    return commandItem;
+    slashCmdNodes.appendChild(commandItem);
   })
 
   return { slashCmds, slashCmdNodes } 
@@ -370,6 +404,9 @@ function createPCLNMenu_slashCmdItem(itemIdx, parsedTimeline) {
   commandItem.classList.add('pcln-slash-command-menu-item');
   commandItem.style.flexDirection = 'column';
   commandItem.style.alignItems = 'flex-start';
+  // commandItem.style.flex = '0 1 auto';
+  // commandItem.style.minHeight = '32px';
+  commandItem.style.padding = '10px 16px';
 
   // highlight recent suggestions
   if (itemIdx < parsedTimeline.recentSuggestions.length) {

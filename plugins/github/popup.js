@@ -45,6 +45,12 @@ const defaultTimestampFormat = 'MMM dd, yyyy, h:mm a zzz';
         const enabledInput = e.target.parentElement.childNodes[1];
         chrome.storage.sync.set({ githubSlashCommands: !enabledInput.checked })
             .then(() => enabledInput.checked = !enabledInput.checked)
+            .then(() => {
+                if (enabledInput.checked) return
+                const pclnMenu = document.getElementById('ghext-pcln-slash-menu');
+                const container = document.getElementById('ghext-new-container');
+                container.removeChild(pclnMenu);
+            })
     });
 
     document.getElementById('github-timestamps').addEventListener('click', (e) => {
