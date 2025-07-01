@@ -11,7 +11,10 @@ const GH_LOCAL = {
     'mparmarpcln',
     'jerrymaxey',
     'ab-gaikwad',
-  ]
+  ],
+  cmdLegend: {
+    '/pipelineApprove': 'Bypass approval for pipeline applications'
+  }
 };
 
 (async () => {
@@ -252,6 +255,12 @@ function parseComments(isSlashCommandMenu) {
   })
 
   if (!isSlashCommandMenu) console.log('Parsed Timeline', parsedTimeline)
+  if (Object.keys(parsedTimeline.legend).length > 0) {
+    parsedTimeline.legend = {
+      ...parsedTimeline.legend,
+      ...GH_LOCAL.cmdLegend,
+    }
+  }
   GH_LOCAL.parsedTimeline = parsedTimeline
   return parsedTimeline
 }
@@ -345,14 +354,16 @@ function createPCLNMenu_container() {
 
   pclnMenu.style.width = '300px'
   pclnMenu.style.height = '320px'
-  pclnMenu.style.border = '1px solid rgb(61, 68, 77)'
+  // pclnMenu.style.border = '1px solid rgb(61, 68, 77)'
+  pclnMenu.style.borderWidth = '1px'
+  pclnMenu.style.borderStyle = 'solid'
   pclnMenu.style.borderRadius = '6px'
-  pclnMenu.style.backgroundColor = 'rgb(13, 17, 23)'
+  // pclnMenu.style.backgroundColor = 'rgb(13, 17, 23)'
   // pclnMenu.style.padding = '5px 0px'
   pclnMenu.style.marginTop = '8px'
   pclnMenu.style.marginBottom = '16px'
   pclnMenu.style.marginRight = '8px'
-  pclnMenu.style.color = 'rgb(240, 246, 252)'
+  // pclnMenu.style.color = 'rgb(240, 246, 252)'
   pclnMenu.style.colorScheme = 'dark'
   pclnMenu.style.lineHeight = '21px'
   pclnMenu.style.boxSizing = 'border-box'
@@ -374,11 +385,12 @@ function createPCLNMenu_slashCmds() {
   slashCmdNodes.style.height = '240px'
 
   slashCmds.forEach((cmd, idx) => {
-    const commandItem = createPCLNMenu_slashCmdItem(idx, parsedTimeline);
+    const isHighlighted = idx < parsedTimeline.recentSuggestions.length
+    const commandItem = createPCLNMenu_slashCmdItem(isHighlighted);
     const {
       commandText,
       commandDesc,
-    } = createPCLNMenu_slashCmdContent(cmd, parsedTimeline);
+    } = createPCLNMenu_slashCmdContent(cmd, parsedTimeline, isHighlighted);
 
     commandItem.appendChild(commandText);
     commandItem.appendChild(commandDesc);
@@ -396,7 +408,7 @@ function createPCLNMenu_slashCmds() {
   return { slashCmds, slashCmdNodes } 
 }
 
-function createPCLNMenu_slashCmdItem(itemIdx, parsedTimeline) {
+function createPCLNMenu_slashCmdItem(isHighlighted) {
   const commandItem = document.createElement('div');
   commandItem.role = 'option';
   commandItem.classList.add('SelectMenu-item');
@@ -404,25 +416,27 @@ function createPCLNMenu_slashCmdItem(itemIdx, parsedTimeline) {
   commandItem.classList.add('pcln-slash-command-menu-item');
   commandItem.style.flexDirection = 'column';
   commandItem.style.alignItems = 'flex-start';
-  // commandItem.style.flex = '0 1 auto';
-  // commandItem.style.minHeight = '32px';
   commandItem.style.padding = '10px 16px';
 
   // highlight recent suggestions
-  if (itemIdx < parsedTimeline.recentSuggestions.length) {
-    commandItem.style.backgroundColor = '#1f6feb';
+  if (isHighlighted) {
+    commandItem.setAttribute('data-highlighted', 'true')
+    // commandItem.style.backgroundColor = '#1f6feb';
+    // commandItem.style.color = '#fff';
+    // commandItem.style.borderColor = '#1f6feb';
   }
 
   return commandItem;
 }
 
-function createPCLNMenu_slashCmdContent(cmd, parsedTimeline) {
+function createPCLNMenu_slashCmdContent(cmd, parsedTimeline, isHighlighted) {
   const commandText = document.createElement('h5');
   commandText.textContent = cmd;
 
   const commandDesc = document.createElement('span');
   commandDesc.classList.add('command-description');
-  if (parsedTimeline.recentSuggestions.includes(cmd)) {
+  if (isHighlighted) {
+    commandText.style.color = '#1f6feb';
     commandDesc.textContent = parsedTimeline.legend[cmd];
   }
 
@@ -441,6 +455,8 @@ function createPCLNMenu_slashCmdListeners(commandItem, commandDesc, cmd, parsedT
   })
 
   commandItem.addEventListener('mouseout', () => {
+    const isHighlighted = commandItem.getAttribute('data-highlighted')
+    if (isHighlighted) return
     commandDesc.textContent = ''
   })
 }
