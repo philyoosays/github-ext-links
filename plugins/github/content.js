@@ -34,8 +34,10 @@ const GH_LOCAL = {
     for (const mutation of mutations) {
       if (mutation.type !== 'childList') return
       replaceTimestamps()
-      parseComments()
-      slashCommandMenu()
+      if (window.location.href.includes('github.com/pcln/gitops-k8s/pull')) {
+        parseComments()
+        slashCommandMenu()
+      }
     }
   });
   observer.observe(document.body, { childList: true, subtree: true });
