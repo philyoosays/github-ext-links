@@ -110,6 +110,14 @@ input:checked+.slider:before {
     background-color: #0056b3;
 }
 
+.spaced-left {
+    margin-left: 3px;
+}
+
+.spaced-right {
+    margin-right: 3px;
+}
+
 .option-input {
     width: 100%;
     padding: 0.25rem;

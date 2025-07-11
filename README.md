@@ -77,6 +77,31 @@ _Default Format_: `MMM dd, yyyy, h:mm a zzz`
 
 ---
 
+### Codefresh
+
+#### Open Workflow Details in a New Tab
+
+This is a background feature that does not need to be enabled. It opens the workflow details in a new tab so that you don't lose your place in the workflow view.
+
+#### Skip To Workflow
+
+Specifically works on workflow view.
+`https://codefresh.io/2.0/workflows/`
+
+##### By Timestamp
+
+Skips to a workflow based on a timestamp provided. It will stop at the first workflow just prior to the matching timestamp and will highlight the workflow.
+
+<ins>Best Practice</ins>: Filter by date first, then skip to the timestamp. This feature only operates by the timestamp and so it will not work across days.
+
+##### By Pull Request
+
+This feature was initially intended to find PR numbers in the workflow identifier text but technically, it will find any text within the workflow identifier text. It will skip through the workflow pages until the text is found and will highlight the workflow.
+
+**NOTE**: For both "Skip To" features, there is a max number of tries of 5000 attempts before it will stop. 
+
+---
+
 ### Tab Grouping
 Opens new tabs grouped together with the originating tab and names the tabs intelligently. It is based on the source tab.
 
