@@ -28,6 +28,12 @@ Makes any external links in github open in a new tab.
 
 - **Open External Links In New Tab**: Disable or enable the feature
 
+#### Slash Command Menu
+
+Adds a slash command menu to the gitops-k8s PR page. In the comment section, type `/` to open the menu. It will be prepopulated with all the commands from the legend that Argo provides. 
+
+If Argo suggests a command, it will float to the top of the menu.
+
 #### Modify Github Timestamps
 Modifies the timestamps on github to include date and time.
 
@@ -74,6 +80,10 @@ _Default Format_: `MMM dd, yyyy, h:mm a zzz`
 | MMMM dd, yyyy | June 24, 2025 |
 | MMM dd, yyyy, hh:mm a | Jun 24, 2025, 02:15 PM |
 | DDD MMM dd, yyyy, h:mm a zzz | Tuesday Jun 24, 2025, 2:15 PM EDT |
+
+**Only For PRs** - Change timestamps only on PR pages
+**No Relative Time** - Remove relative time from the timestamps
+**Abbreviate Relative** - Abbreviate relative time
 
 ---
 
