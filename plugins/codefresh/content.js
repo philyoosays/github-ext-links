@@ -1,31 +1,26 @@
 
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-(async () => {
-    if (window.location.href.includes('codefresh.io/2.0/workflows')) {
-        let loaded = false
-        while (!loaded) {
-            await wait(500)
-            const wfContainers = document.querySelectorAll('div.workflow-item__container')
-            if (wfContainers.length) {
-                loaded = true
-                wfContainers.forEach(container => {
-                    const wfName = container.querySelector('div.workflow-item-header-payload__single').textContent.split(' ')[0]
-                    const wfFooter = container.querySelector('nz-flex.global-workflow-item-footer__container')
-                    const wfDetails = wfFooter.querySelector('a.flex-no-shrink.ant-typography')
-                    const newWFDetails = document.createElement('a')
-                    newWFDetails.innerText = wfDetails.innerText
-                    newWFDetails.classList.add('flex-no-shrink')
-                    newWFDetails.classList.add('ant-typography')
-                    newWFDetails.setAttribute('target', '_blank')
+const CF_CONTENT_GLOBAL = { firstItem: '' };
 
-                    const { origin, pathname, search } = window.location
-                    newWFDetails.href = `${origin}${pathname}/${wfName}${search}`
-                    wfFooter.replaceChild(newWFDetails, wfDetails)
-                })
+(async () => {
+    const observer = new MutationObserver(async (mutations) => {
+        for (const mutation of mutations) {
+            if (mutation.type !== 'childList') return
+            if (window.location.href.includes('codefresh.io/2.0/workflows')) {
+                const firstItem = document.querySelector('div.workflow-item-header__container')
+                if (!firstItem) return
+                const firstItemText = firstItem.textContent.split(' ').filter(Boolean).slice(1,-2).join(' ')
+                if (CF_CONTENT_GLOBAL.firstItem !== firstItemText) {
+                    CF_CONTENT_GLOBAL.firstItem = firstItemText
+                    await hijackWorkflowDetails()
+                }
             }
         }
-    }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    // await hijackWorkflowDetails()
+
 })();
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
@@ -109,5 +104,31 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
     sendResponse({ status: "Task completed" });
 });
+
+async function hijackWorkflowDetails() {
+    let loaded = false
+    if (!window.location.href.includes('codefresh.io/2.0/workflows')) return
+    while (!loaded) {
+        await wait(500)
+        const wfContainers = document.querySelectorAll('div.workflow-item__container')
+        if (wfContainers.length) {
+            loaded = true
+            wfContainers.forEach(container => {
+                const wfName = container.querySelector('div.workflow-item-header-payload__single').textContent.split(' ')[0]
+                const wfFooter = container.querySelector('nz-flex.global-workflow-item-footer__container')
+                const wfDetails = wfFooter.querySelector('a.flex-no-shrink.ant-typography')
+                const newWFDetails = document.createElement('a')
+                newWFDetails.innerText = wfDetails.innerText
+                newWFDetails.classList.add('flex-no-shrink')
+                newWFDetails.classList.add('ant-typography')
+                newWFDetails.setAttribute('target', '_blank')
+
+                const { origin, pathname, search } = window.location
+                newWFDetails.href = `${origin}${pathname}/${wfName}${search}`
+                wfFooter.replaceChild(newWFDetails, wfDetails)
+            })
+        }
+    }
+}
 
 console.log('Plugin: Codefresh content loaded');
