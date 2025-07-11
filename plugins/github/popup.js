@@ -97,7 +97,7 @@ async function addTimestampFormatExample() {
     if (!settings.githubTimestampsFormat) {
         format = defaultTimestampFormat
     }
-    const formattedDate = formatDate(Date.now(), format);
+    const formattedDate = formatDate(Date.now() - 120000, format);
 
     const pTagLabel = document.createElement('p');
     const pTagValue = document.createElement('p');
@@ -107,7 +107,11 @@ async function addTimestampFormatExample() {
     pTagValue.textContent = formattedDate;
 
     if (!STATE.githubTimestampsNoRelative) {
-        pTagValue.textContent += ' (now)';
+        let relative = ' (2 minutes ago)'
+        if (STATE.githubTimestampsAbbrevRelative) {
+            relative = abbreviateRelative(relative)
+        }
+        pTagValue.textContent += relative;
     }
 
     tsFormatExampleElem.appendChild(pTagLabel);
