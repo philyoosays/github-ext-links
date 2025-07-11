@@ -40,6 +40,14 @@
         "js/env.js",
         "plugins/github/content.js"
       ]
+    },
+    {
+      "matches": [
+        "https://g.codefresh.io/*"
+      ],
+      "js": [
+        "plugins/codefresh/content.js"
+      ]
     }
   ],
   "background": {
