@@ -450,7 +450,8 @@ function createPCLNMenu_slashCmdContent(cmd, parsedTimeline, isHighlighted) {
 
 function createPCLNMenu_slashCmdListeners(commandItem, commandDesc, cmd, parsedTimeline) {
   commandItem.addEventListener('click', () => {
-    const textarea = document.querySelector('textarea.js-comment-field');
+    const textarea = document.getElementById('new_comment_field') ||
+                    document.querySelector('textarea.js-comment-field');
     textarea.value = cmd
     document.querySelector('.js-slash-command-menu').remove()
   })
