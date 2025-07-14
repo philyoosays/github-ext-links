@@ -400,12 +400,12 @@ function createPCLNMenu_slashCmds() {
     commandItem.appendChild(commandText);
     commandItem.appendChild(commandDesc);
 
-    createPCLNMenu_slashCmdListeners(
+    createPCLNMenu_slashCmdListeners({
       commandItem,
       commandDesc,
       cmd,
       parsedTimeline
-    );
+    });
 
     slashCmdNodes.appendChild(commandItem);
   })
@@ -448,7 +448,7 @@ function createPCLNMenu_slashCmdContent(cmd, parsedTimeline, isHighlighted) {
   return { commandText, commandDesc };
 }
 
-function createPCLNMenu_slashCmdListeners(commandItem, commandDesc, cmd, parsedTimeline) {
+function createPCLNMenu_slashCmdListeners({commandItem, commandDesc, cmd, parsedTimeline}) {
   commandItem.addEventListener('click', () => {
     const textarea = document.getElementById('new_comment_field') ||
                     document.querySelector('textarea.js-comment-field');
