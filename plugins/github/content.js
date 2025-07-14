@@ -170,7 +170,7 @@ function parseComments(isSlashCommandMenu) {
    * 
    * TimelineItem {
    *  author: string,
-   *  isArgo: string,
+   *  isABot: string,
    *  date: Date,
    *  comment: {
    *    raw: string,
@@ -202,9 +202,12 @@ function parseComments(isSlashCommandMenu) {
       timelineObj.debug.authorParse = 'textContent'
     }
     /**
-     * isArgo
+     * isABot
      */
-    timelineObj.isArgo = timelineObj.author.includes('pcln-argo')
+    timelineObj.isABot = [
+      'pcln-argo',
+      'pcln-clouddev-terraformator',
+    ].includes(timelineObj.author)
     /**
      * Date
      */
@@ -237,7 +240,7 @@ function parseComments(isSlashCommandMenu) {
      * Slash Command Acknowledgement
      */
     const isSameCmd = timelineObj.slashCommands.length > 1 && timelineObj.slashCommands.every(cmd => cmd === timelineObj.slashCommands[0])
-    if (isSameCmd && timelineObj.isArgo && commentBody.innerText.includes('request by')) {
+    if (isSameCmd && timelineObj.isABot && commentBody.innerText.includes('request by')) {
       timelineObj.slashCommandAck = commentBody.innerText.includes('was processed')
       timelineObj.slashCommandAckText = commentBody.innerText.replace(timelineObj.slashCommands[0], '').trim()
     }
@@ -247,14 +250,14 @@ function parseComments(isSlashCommandMenu) {
      * Recent Suggestions
      */
     if (
-      timelineObj.isArgo &&
+      timelineObj.isABot &&
       !timelineObj.slashCommandLegend &&
       !timelineObj.slashCommandAck &&
       timelineObj.slashCommands.length > 0
     ) {  
       parsedTimeline.recentSuggestions = timelineObj.slashCommands
     }
-    if (!timelineObj.isArgo && timelineObj.slashCommands.length === 1) {
+    if (!timelineObj.isABot && timelineObj.slashCommands.length === 1) {
       parsedTimeline.recentSuggestions = []
     }
   })
