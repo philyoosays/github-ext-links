@@ -34,7 +34,10 @@ const GH_LOCAL = {
     for (const mutation of mutations) {
       if (mutation.type !== 'childList') return
       replaceTimestamps()
-      if (window.location.href.includes('github.com/pcln/gitops-k8s/pull')) {
+      if (
+        window.location.href.includes('github.com/pcln/') &&
+        window.location.href.includes('/pull/')
+      ) {
         parseComments()
         slashCommandMenu()
       }
