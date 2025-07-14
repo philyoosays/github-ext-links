@@ -129,9 +129,9 @@ function replaceTimestamps() {
 function parseComments(isSlashCommandMenu) {
   if (!STATE.githubSlashCommands) return;
 
-  const isGithub = window.location.href.startsWith('https://github.com/')
+  const isPCLN_Github = window.location.href.startsWith('https://github.com/pcln/')
   const isPR = window.location.href.includes('/pull/')
-  if (!isGithub || !isPR) return;
+  if (!isPCLN_Github || !isPR) return;
   
   const timeLineItems = document.querySelectorAll('.TimelineItem.js-comment-container')
   if (!timeLineItems.length) return
