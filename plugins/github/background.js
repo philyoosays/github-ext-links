@@ -12,8 +12,7 @@ async function handleExternalLink(url, sourceTab) {
     console.log('handleExternalLink', settings, url, sourceTab)
     if (!settings.githubExtLinks) return;
     const newTab = await chrome.tabs.create({ url, active: true });
-    console.log('GLOBAL', GLOBAL)
-    GLOBAL.handleTabGrouping(sourceTab, newTab);
+    GLOBAL.tabGroup.handleTabGrouping(sourceTab, newTab);
 }
 
 console.log('Plugin: Github background loaded');
