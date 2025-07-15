@@ -147,7 +147,16 @@ function parseComments(isSlashCommandMenu) {
     return headerText[idx - 1]
   }
 
+  const parseRepo = (href) => {
+    const repoName = href.split('/pcln/')[1].split('/')[0]
+    return {
+      repoName,
+      isSupported: ['gitops-k8s', 'terraform_configs'].includes(repoName)
+    }
+  }
+
   const parsedTimeline = {
+    repo: parseRepo(window.location.href),
     loggedInUser: {
       user: '',
       isPipeline: false,
@@ -227,16 +236,14 @@ function parseComments(isSlashCommandMenu) {
      * Slash Commands
      */
     timelineObj.slashCommandLegend = timelineObj.comment.raw.includes('Click here for all available commands.')
-    const textContent = commentBody.textContent.split(' to Rendered Manifests')[0]
-    const slashCmd = textContent.matchAll(/(?: |\n)(\/[a-zA-Z]+)(?: |\n)(.+)(?: |\n)/gm)
-    timelineObj.slashCommands = []
-    for (const cmd of slashCmd) {
-      timelineObj.slashCommands.push(cmd[1].trim())
-      if (timelineObj.slashCommandLegend) {
-        parsedTimeline.legend[cmd[1].trim()] = cmd[2].trim()
-      }
+    const parsedSlashCmds = parseByEnv(parsedTimeline, timelineObj).slashCmds[parsedTimeline.repo.repoName](commentBody)
+    const legendCmds = Object.keys(parsedTimeline.legend)
+    // if suggested command not in legend, add it
+    if (!legendCmds.length) parsedTimeline.legend = parsedSlashCmds.reduce((a,c) => ({...a, [c]:''}), {})
+    else {
+      parsedSlashCmds.filter(cmd => !legendCmds.includes(cmd)).forEach(cmd => parsedTimeline.legend[cmd] = '')
     }
-    timelineObj.slashCommands = [ ...new Set(timelineObj.slashCommands) ]
+    timelineObj.slashCommands = [ ...new Set(parsedSlashCmds) ]
     /**
      * Slash Command Acknowledgement
      */
@@ -267,7 +274,7 @@ function parseComments(isSlashCommandMenu) {
   if (Object.keys(parsedTimeline.legend).length > 0) {
     parsedTimeline.legend = {
       ...parsedTimeline.legend,
-      ...GH_LOCAL.cmdLegend,
+      ...(parsedTimeline.repo.repoName === 'gitops-k8s' && GH_LOCAL.cmdLegend),
     }
   }
   GH_LOCAL.parsedTimeline = parsedTimeline
@@ -383,9 +390,14 @@ function createPCLNMenu_container() {
 function createPCLNMenu_slashCmds() {
   const parsedTimeline = parseComments(true);
 
+  const additionalCommands = []
+  if (parsedTimeline.repo === 'gitops-k8s') {
+    additionalCommands.push('/retryGates')
+  }
+
   const slashCmds = [...new Set([
     ...parsedTimeline.recentSuggestions,
-    '/retryGates',
+    ...additionalCommands,
     ...Object.keys(parsedTimeline.legend),
   ])];
   
@@ -469,4 +481,32 @@ function createPCLNMenu_slashCmdListeners({commandItem, commandDesc, cmd, parsed
     if (isHighlighted) return
     commandDesc.textContent = ''
   })
+}
+
+function parseByEnv(parsedTimeline, timelineObj) {
+  const parseSlashCmds = (textContent) => textContent.matchAll(/(?: |\n)(\/[a-zA-Z-]+)(?: |\n)(.+)(?: |\n)/gm)
+  return {
+    slashCmds: {
+      'gitops-k8s': (commentBody) => {
+        const slashCommands = []
+        const textContent = commentBody.textContent.split(' to Rendered Manifests')[0]
+        const slashCmd = parseSlashCmds(textContent)
+        for (const cmd of slashCmd) {
+          if (timelineObj.slashCommandLegend) {
+            parsedTimeline.legend[cmd[1].trim()] = cmd[2].trim()
+          }
+          slashCommands.push(cmd[1].trim())
+        }
+        return slashCommands
+      },
+      terraform_configs: (commentBody) => {
+        const slashCommands = []
+        const slashCmd = parseSlashCmds(commentBody.textContent)
+        for (const cmd of slashCmd) {
+          slashCommands.push(cmd[1].trim() + ' ' + cmd[2].trim())
+        }
+        return slashCommands
+      }
+    }
+  }
 }
