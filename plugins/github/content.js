@@ -63,7 +63,7 @@ function openExternalInNewTab() {
     const link = e.target.closest('a');
     if (!link) return;
 
-    console.log('clicked', link, link.href)
+    console.log('clicked', link.href)
     const url = new URL(link.href);
     if (url.hostname === window.location.hostname) {
       return;
