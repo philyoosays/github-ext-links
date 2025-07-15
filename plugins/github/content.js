@@ -116,11 +116,12 @@ function replaceTimestamps() {
         replacement.title = `${isoDateTime} (${relativeTime})`;
         replacement.textContent = textContent;
         if (!STATE.githubTimestampsNoRelative) {
-          let fmtRelativeTime = ` (${relativeTime})`
+          let fmtRelativeTime = `(${relativeTime})`
           if (STATE.githubTimestampsAbbrevRelative) {
-            fmtRelativeTime = ` (${abbreviateRelative(relativeTime)})`
+            fmtRelativeTime = `(${abbreviateRelative(relativeTime)})`
           }
-          replacement.textContent += fmtRelativeTime
+          if (STATE.githubRelNonBreaking) fmtRelativeTime = fmtRelativeTime.replace(/ /g, '&nbsp;')
+          replacement.innerHTML += ` ${fmtRelativeTime}`
         }
 
         element.parentElement.replaceChild(replacement, element)
