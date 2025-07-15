@@ -274,7 +274,11 @@ function parseComments(isSlashCommandMenu) {
   if (Object.keys(parsedTimeline.legend).length > 0) {
     parsedTimeline.legend = {
       ...parsedTimeline.legend,
-      ...(parsedTimeline.repo.repoName === 'gitops-k8s' && GH_LOCAL.cmdLegend),
+      ...(
+        parsedTimeline.repo.repoName === 'gitops-k8s'
+        && parsedTimeline.loggedInUser.isPipeline
+        && GH_LOCAL.cmdLegend
+      ),
     }
   }
   GH_LOCAL.parsedTimeline = parsedTimeline
