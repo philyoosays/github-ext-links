@@ -1,6 +1,6 @@
 
 ON_MESSAGE.groupTabToSource = async (message, sender, sendResponse) => {
-    if (!message.action !== 'groupTabToSource') return
+    if (message.action !== 'groupTabToSource') return
     handleGroupTabToSource(message.url, sender.tab);
 };
 
