@@ -93,8 +93,8 @@ function parseJiraTicketNumber() {
   const branchElem = document.querySelector('.commit-ref.head-ref') || {}
   const headerText = prHeader.innerText || ''
   const branchText = branchElem.innerText || ''
-  const possibleFromHeaderMatch = headerText.match(/((?:[a-zA-Z]{3,})(?: |-)(?:\d{3,}))/)
-  const possibleFromBranchMatch = branchText.match(/((?:[a-zA-Z]{3,})(?: |-)(?:\d{3,}))/)
+  const possibleFromHeaderMatch = headerText.match(/((?:[a-zA-Z]{2,})(?: |-)(?:\d{3,}))/)
+  const possibleFromBranchMatch = branchText.match(/((?:[a-zA-Z]{2,})(?: |-)(?:\d{3,}))/)
   const possibleFromHeader = possibleFromHeaderMatch && possibleFromHeaderMatch[1].split(' ').join('-')
   const possibleFromBranch = possibleFromBranchMatch && possibleFromBranchMatch[1]
   const possibleFrom = possibleFromHeader || possibleFromBranch
