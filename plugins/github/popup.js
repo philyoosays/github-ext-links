@@ -45,6 +45,11 @@ const defaultTimestampFormat = 'MMM dd, yyyy, h:mm a zzz';
             .then(() => enabledInput.checked = !enabledInput.checked)
     });
 
+    document.getElementById('gh-jira-ticket-links').addEventListener('click', (e) => {
+        // const isDisabled = e.currentTarget.classList
+        // console.log('clicked', isDisabled)
+    });
+
     document.getElementById('gh-slash-cmd').addEventListener('click', (e) => {
         const enabledInput = e.target.parentElement.childNodes[1];
         chrome.storage.sync.set({ githubSlashCommands: !enabledInput.checked })
@@ -99,6 +104,19 @@ const defaultTimestampFormat = 'MMM dd, yyyy, h:mm a zzz';
     console.log('Plugin: Github popup loaded');
 })();
 
+chrome.runtime.onMessage.addListener((message) => {
+    if (message.action === 'ghFoundJiraTicket') {
+        const button = document.getElementById('gh-jira-ticket-links')
+        if (button.innerText !== message.jiraTicket) {
+            button.disabled = false
+            button.innerText = message.jiraTicket
+            button.addEventListener('click', () => {
+                chrome.tabs.create({ url: `https://priceline.atlassian.net/browse/${message.jiraTicket}` })
+            })
+        }
+    }
+});
+
 async function addTimestampFormatExample() {
     const tsFormatExampleElem = document.getElementById('gh-timestamps-format-example');
     tsFormatExampleElem.innerHTML = '';
@@ -120,7 +138,7 @@ async function addTimestampFormatExample() {
     if (!STATE.githubRelNonBreaking) {
         tsFormatExampleElem.style.width = '150px'
     }
-    
+
     if (!STATE.githubTimestampsNoRelative) {
         let relative = '(2 minutes ago)'
         if (STATE.githubTimestampsAbbrevRelative) {

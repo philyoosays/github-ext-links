@@ -13,16 +13,15 @@ importScripts(
     const { _keys } = await chrome.storage.sync.get(['_keys'])
     STATE = await chrome.storage.sync.get(_keys)
 
-    chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
-        console.log('Received message:', message);
-
-        for (const handler of Object.values(ON_MESSAGE)) {
-            await handler(message, sender, sendResponse);
-        }
-    });
-
-    console.log('Background script loaded');
+    console.log('Background script loaded - Main');
 })();
+
+chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+    // console.log('Received message:', message);
+    for (const handler of Object.values(ON_MESSAGE)) {
+        await handler(message, sender, sendResponse);
+    }
+});
 
 chrome.storage.onChanged.addListener((changes, namespace) => {
     if (namespace !== 'sync') return
@@ -30,3 +29,5 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
         STATE[key] = newValue;
     });
 });
+
+console.log('Background script loaded - background');
