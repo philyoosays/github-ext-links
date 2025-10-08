@@ -38,6 +38,7 @@
       ],
       "js": [
         "js/env.js",
+        "js/content.js",
         "plugins/github/content.js"
       ]
     },

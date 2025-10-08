@@ -34,7 +34,11 @@ const GH_LOCAL = {
     for (const mutation of mutations) {
       if (mutation.type !== 'childList') return
       replaceTimestamps()
-      if (window.location.href.includes('github.com/pcln/gitops-k8s/pull')) {
+      if (
+        window.location.href.includes('github.com/pcln/') &&
+        window.location.href.includes('/pull/')
+      ) {
+        sendFoundJiraTicketNumber()
         parseComments()
         slashCommandMenu()
       }
@@ -60,7 +64,7 @@ function openExternalInNewTab() {
     const link = e.target.closest('a');
     if (!link) return;
 
-    console.log('clicked', link, link.href)
+    console.log('clicked', link.href)
     const url = new URL(link.href);
     if (url.hostname === window.location.hostname) {
       return;
@@ -72,6 +76,28 @@ function openExternalInNewTab() {
       url: url.href
     });
   });
+}
+
+function sendFoundJiraTicketNumber() {
+  const jiraTicket = parseJiraTicketNumber();
+  if (jiraTicket) {
+    console.log('Jira ticket found:', jiraTicket)
+    chrome.runtime.sendMessage({ action: 'ghFoundJiraTicket', jiraTicket });
+  }
+}
+
+function parseJiraTicketNumber() {
+  const prHeader = document.querySelector('.gh-header-show') || {}
+  const branchElem = document.querySelector('.commit-ref.head-ref') || {}
+  const headerText = prHeader.innerText || ''
+  const branchText = branchElem.innerText || ''
+  const possibleFromHeaderMatch = headerText.match(/((?:[a-zA-Z]{3,})(?: |-)(?:\d{3,}))/)
+  const possibleFromBranchMatch = branchText.match(/((?:[a-zA-Z]{3,})(?: |-)(?:\d{3,}))/)
+  const possibleFromHeader = possibleFromHeaderMatch && possibleFromHeaderMatch[1].split(' ').join('-')
+  const possibleFromBranch = possibleFromBranchMatch && possibleFromBranchMatch[1]
+  const possibleFrom = possibleFromHeader || possibleFromBranch
+  if (possibleFrom) return possibleFrom.toUpperCase()
+  return null
 }
 
 function replaceTimestamps() {
@@ -113,11 +139,12 @@ function replaceTimestamps() {
         replacement.title = `${isoDateTime} (${relativeTime})`;
         replacement.textContent = textContent;
         if (!STATE.githubTimestampsNoRelative) {
-          let fmtRelativeTime = ` (${relativeTime})`
+          let fmtRelativeTime = `(${relativeTime})`
           if (STATE.githubTimestampsAbbrevRelative) {
-            fmtRelativeTime = ` (${abbreviateRelative(relativeTime)})`
+            fmtRelativeTime = `(${abbreviateRelative(relativeTime)})`
           }
-          replacement.textContent += fmtRelativeTime
+          if (STATE.githubRelNonBreaking) fmtRelativeTime = fmtRelativeTime.replace(/ /g, '&nbsp;')
+          replacement.innerHTML += ` ${fmtRelativeTime}`
         }
 
         element.parentElement.replaceChild(replacement, element)
@@ -129,9 +156,9 @@ function replaceTimestamps() {
 function parseComments(isSlashCommandMenu) {
   if (!STATE.githubSlashCommands) return;
 
-  const isGithub = window.location.href.startsWith('https://github.com/')
+  const isPCLN_Github = window.location.href.startsWith('https://github.com/pcln/')
   const isPR = window.location.href.includes('/pull/')
-  if (!isGithub || !isPR) return;
+  if (!isPCLN_Github || !isPR) return;
   
   const timeLineItems = document.querySelectorAll('.TimelineItem.js-comment-container')
   if (!timeLineItems.length) return
@@ -143,7 +170,16 @@ function parseComments(isSlashCommandMenu) {
     return headerText[idx - 1]
   }
 
+  const parseRepo = (href) => {
+    const repoName = href.split('/pcln/')[1].split('/')[0]
+    return {
+      repoName,
+      isSupported: ['gitops-k8s', 'terraform_configs'].includes(repoName)
+    }
+  }
+
   const parsedTimeline = {
+    repo: parseRepo(window.location.href),
     loggedInUser: {
       user: '',
       isPipeline: false,
@@ -167,7 +203,7 @@ function parseComments(isSlashCommandMenu) {
    * 
    * TimelineItem {
    *  author: string,
-   *  isArgo: string,
+   *  isABot: string,
    *  date: Date,
    *  comment: {
    *    raw: string,
@@ -199,9 +235,12 @@ function parseComments(isSlashCommandMenu) {
       timelineObj.debug.authorParse = 'textContent'
     }
     /**
-     * isArgo
+     * isABot
      */
-    timelineObj.isArgo = timelineObj.author.includes('pcln-argo')
+    timelineObj.isABot = [
+      'pcln-argo',
+      'pcln-clouddev-terraformator',
+    ].includes(timelineObj.author)
     /**
      * Date
      */
@@ -220,21 +259,19 @@ function parseComments(isSlashCommandMenu) {
      * Slash Commands
      */
     timelineObj.slashCommandLegend = timelineObj.comment.raw.includes('Click here for all available commands.')
-    const textContent = commentBody.textContent.split(' to Rendered Manifests')[0]
-    const slashCmd = textContent.matchAll(/(?: |\n)(\/[a-zA-Z]+)(?: |\n)(.+)(?: |\n)/gm)
-    timelineObj.slashCommands = []
-    for (const cmd of slashCmd) {
-      timelineObj.slashCommands.push(cmd[1].trim())
-      if (timelineObj.slashCommandLegend) {
-        parsedTimeline.legend[cmd[1].trim()] = cmd[2].trim()
-      }
+    const parsedSlashCmds = parseByEnv(parsedTimeline, timelineObj).slashCmds[parsedTimeline.repo.repoName](commentBody)
+    const legendCmds = Object.keys(parsedTimeline.legend)
+    // if suggested command not in legend, add it
+    if (!legendCmds.length) parsedTimeline.legend = parsedSlashCmds.reduce((a,c) => ({...a, [c]:''}), {})
+    else {
+      parsedSlashCmds.filter(cmd => !legendCmds.includes(cmd)).forEach(cmd => parsedTimeline.legend[cmd] = '')
     }
-    timelineObj.slashCommands = [ ...new Set(timelineObj.slashCommands) ]
+    timelineObj.slashCommands = [ ...new Set(parsedSlashCmds) ]
     /**
      * Slash Command Acknowledgement
      */
     const isSameCmd = timelineObj.slashCommands.length > 1 && timelineObj.slashCommands.every(cmd => cmd === timelineObj.slashCommands[0])
-    if (isSameCmd && timelineObj.isArgo && commentBody.innerText.includes('request by')) {
+    if (isSameCmd && timelineObj.isABot && commentBody.innerText.includes('request by')) {
       timelineObj.slashCommandAck = commentBody.innerText.includes('was processed')
       timelineObj.slashCommandAckText = commentBody.innerText.replace(timelineObj.slashCommands[0], '').trim()
     }
@@ -244,14 +281,14 @@ function parseComments(isSlashCommandMenu) {
      * Recent Suggestions
      */
     if (
-      timelineObj.isArgo &&
+      timelineObj.isABot &&
       !timelineObj.slashCommandLegend &&
       !timelineObj.slashCommandAck &&
       timelineObj.slashCommands.length > 0
     ) {  
       parsedTimeline.recentSuggestions = timelineObj.slashCommands
     }
-    if (!timelineObj.isArgo && timelineObj.slashCommands.length === 1) {
+    if (!timelineObj.isABot && timelineObj.slashCommands.length === 1) {
       parsedTimeline.recentSuggestions = []
     }
   })
@@ -260,7 +297,11 @@ function parseComments(isSlashCommandMenu) {
   if (Object.keys(parsedTimeline.legend).length > 0) {
     parsedTimeline.legend = {
       ...parsedTimeline.legend,
-      ...GH_LOCAL.cmdLegend,
+      ...(
+        parsedTimeline.repo.repoName === 'gitops-k8s'
+        && parsedTimeline.loggedInUser.isPipeline
+        && GH_LOCAL.cmdLegend
+      ),
     }
   }
   GH_LOCAL.parsedTimeline = parsedTimeline
@@ -376,9 +417,14 @@ function createPCLNMenu_container() {
 function createPCLNMenu_slashCmds() {
   const parsedTimeline = parseComments(true);
 
+  const additionalCommands = []
+  if (parsedTimeline.repo === 'gitops-k8s') {
+    additionalCommands.push('/retryGates')
+  }
+
   const slashCmds = [...new Set([
     ...parsedTimeline.recentSuggestions,
-    '/retryGates',
+    ...additionalCommands,
     ...Object.keys(parsedTimeline.legend),
   ])];
   
@@ -397,12 +443,12 @@ function createPCLNMenu_slashCmds() {
     commandItem.appendChild(commandText);
     commandItem.appendChild(commandDesc);
 
-    createPCLNMenu_slashCmdListeners(
+    createPCLNMenu_slashCmdListeners({
       commandItem,
       commandDesc,
       cmd,
       parsedTimeline
-    );
+    });
 
     slashCmdNodes.appendChild(commandItem);
   })
@@ -445,9 +491,10 @@ function createPCLNMenu_slashCmdContent(cmd, parsedTimeline, isHighlighted) {
   return { commandText, commandDesc };
 }
 
-function createPCLNMenu_slashCmdListeners(commandItem, commandDesc, cmd, parsedTimeline) {
+function createPCLNMenu_slashCmdListeners({commandItem, commandDesc, cmd, parsedTimeline}) {
   commandItem.addEventListener('click', () => {
-    const textarea = document.querySelector('textarea.js-comment-field');
+    const textarea = document.getElementById('new_comment_field') ||
+                    document.querySelector('textarea.js-comment-field');
     textarea.value = cmd
     document.querySelector('.js-slash-command-menu').remove()
   })
@@ -461,4 +508,32 @@ function createPCLNMenu_slashCmdListeners(commandItem, commandDesc, cmd, parsedT
     if (isHighlighted) return
     commandDesc.textContent = ''
   })
+}
+
+function parseByEnv(parsedTimeline, timelineObj) {
+  const parseSlashCmds = (textContent) => textContent.matchAll(/(?: |\n)(\/[a-zA-Z-]+)(?: |\n)(.+)(?: |\n)/gm)
+  return {
+    slashCmds: {
+      'gitops-k8s': (commentBody) => {
+        const slashCommands = []
+        const textContent = commentBody.textContent.split(' to Rendered Manifests')[0]
+        const slashCmd = parseSlashCmds(textContent)
+        for (const cmd of slashCmd) {
+          if (timelineObj.slashCommandLegend) {
+            parsedTimeline.legend[cmd[1].trim()] = cmd[2].trim()
+          }
+          slashCommands.push(cmd[1].trim())
+        }
+        return slashCommands
+      },
+      terraform_configs: (commentBody) => {
+        const slashCommands = []
+        const slashCmd = parseSlashCmds(commentBody.textContent)
+        for (const cmd of slashCmd) {
+          slashCommands.push(cmd[1].trim() + ' ' + cmd[2].trim())
+        }
+        return slashCommands
+      }
+    }
+  }
 }

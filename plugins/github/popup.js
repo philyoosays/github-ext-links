@@ -10,6 +10,7 @@ const defaultTimestampFormat = 'MMM dd, yyyy, h:mm a zzz';
         githubTimestampsNoRelative: false,
         githubTimestampsAbbrevRelative: true,
         githubSlashCommands: true,
+        githubRelNonBreaking: true,
     })
 
     addTimestampFormatExample()
@@ -35,10 +36,18 @@ const defaultTimestampFormat = 'MMM dd, yyyy, h:mm a zzz';
     const timestampAbbrevRelInput = document.getElementById('gh-timestamps-abbrevrel-input')
     timestampAbbrevRelInput.checked = STATE.githubTimestampsAbbrevRelative;
 
+    const timestampRelNonBreakingInput = document.getElementById('gh-timestamps-relnonbreaking-input')
+    timestampRelNonBreakingInput.checked = STATE.githubRelNonBreaking;
+
     document.getElementById('gh-ext-links').addEventListener('click', (e) => {
         const enabledInput = e.target.parentElement.childNodes[1];
         chrome.storage.sync.set({ githubExtLinks: !enabledInput.checked })
             .then(() => enabledInput.checked = !enabledInput.checked)
+    });
+
+    document.getElementById('gh-jira-ticket-links').addEventListener('click', (e) => {
+        // const isDisabled = e.currentTarget.classList
+        // console.log('clicked', isDisabled)
     });
 
     document.getElementById('gh-slash-cmd').addEventListener('click', (e) => {
@@ -85,8 +94,28 @@ const defaultTimestampFormat = 'MMM dd, yyyy, h:mm a zzz';
             .then(() => addTimestampFormatExample())
     });
 
+    document.getElementById('gh-timestamps-relnonbreaking').addEventListener('click', (e) => {
+        const enabledInput = e.target.parentElement.childNodes[1];
+        chrome.storage.sync.set({ githubRelNonBreaking: !enabledInput.checked })
+            .then(() => enabledInput.checked = !enabledInput.checked)
+            .then(() => addTimestampFormatExample())
+    });
+
     console.log('Plugin: Github popup loaded');
 })();
+
+chrome.runtime.onMessage.addListener((message) => {
+    if (message.action === 'ghFoundJiraTicket') {
+        const button = document.getElementById('gh-jira-ticket-links')
+        if (button.innerText !== message.jiraTicket) {
+            button.disabled = false
+            button.innerText = message.jiraTicket
+            button.addEventListener('click', () => {
+                chrome.tabs.create({ url: `https://priceline.atlassian.net/browse/${message.jiraTicket}` })
+            })
+        }
+    }
+});
 
 async function addTimestampFormatExample() {
     const tsFormatExampleElem = document.getElementById('gh-timestamps-format-example');
@@ -106,12 +135,20 @@ async function addTimestampFormatExample() {
     pTagValue.classList.add('example-text');
     pTagValue.textContent = formattedDate;
 
+    if (!STATE.githubRelNonBreaking) {
+        tsFormatExampleElem.style.width = '150px'
+    }
+
     if (!STATE.githubTimestampsNoRelative) {
-        let relative = ' (2 minutes ago)'
+        let relative = '(2 minutes ago)'
         if (STATE.githubTimestampsAbbrevRelative) {
             relative = abbreviateRelative(relative)
         }
-        pTagValue.textContent += relative;
+        if (STATE.githubRelNonBreaking) {
+            relative = relative.replace('/ /g', '&nbsp;');
+            tsFormatExampleElem.style.width = '100%'
+        }
+        pTagValue.innerHTML += ` ${relative}`;
     }
 
     tsFormatExampleElem.appendChild(pTagLabel);

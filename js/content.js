@@ -1,12 +1,10 @@
 // Default settings
-let SETTINGS = {};
-
 (async () => {
-  const { _keys } = await chrome.storage.sync.get(['_keys'])
-  const savedState = await chrome.storage.sync.get(_keys)
-  SETTINGS = { ...savedState };
-  console.log('Content settings loaded:', SETTINGS);
-})()
+  await loadState([
+    'githubExtLinks',
+  ]);
+  console.log('Content settings loaded:', STATE);
+})();
 
 if (window.location.hostname === 'priceline.atlassian.net') {
   setTimeout(() => {
@@ -15,6 +13,7 @@ if (window.location.hostname === 'priceline.atlassian.net') {
       URLS_TO_HIJACK.forEach(url => {
         if (!a.href.startsWith(url)) return;
         a.addEventListener('click', (e) => {
+          e.preventDefault();
           chrome.runtime.sendMessage({
             action: 'groupTabToSource',
             url: encodeURI(a.href),
@@ -22,34 +21,8 @@ if (window.location.hostname === 'priceline.atlassian.net') {
         });
       })
     })
-  }, 1000 * 1)
+  }, 1000 * 1.5)
 }
-
-// Listen for changes to settings
-chrome.storage.onChanged.addListener(function (changes, namespace) {
-  if (namespace !== 'sync') return
-  for (const [key, { newValue }] of Object.entries(changes)) {
-    SETTINGS[key] = newValue;
-  }
-  console.log('Content settings updated:', SETTINGS);
-});
-
-document.addEventListener('click', function (event) {
-  if (!SETTINGS.enabled) return;
-  const link = event.target.closest('a');
-  if (!link) return;
-
-  console.log('clicked', link, link.href)
-  const url = new URL(link.href);
-  if (url.hostname !== window.location.hostname) {
-    event.preventDefault();
-
-    chrome.runtime.sendMessage({
-      action: 'openExternalLink',
-      url: url.href
-    });
-  }
-});
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('Received message:', message);

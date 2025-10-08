@@ -1,6 +1,6 @@
 
 ON_MESSAGE.groupTabToSource = async (message, sender, sendResponse) => {
-    if (!message.action !== 'groupTabToSource') return
+    if (message.action !== 'groupTabToSource') return
     handleGroupTabToSource(message.url, sender.tab);
 };
 
@@ -122,8 +122,10 @@ async function poll(callback, condition) {
     return res
 }
 
-GLOBAL.addToGroup = addToGroup;
-GLOBAL.createNewGroup = createNewGroup;
-GLOBAL.handleTabGrouping = handleTabGrouping;
+GLOBAL.tabGroup = {
+    addToGroup,
+    createNewGroup,
+    handleTabGrouping,
+}
 
 console.log('Plugin: TabGrouping background loaded')

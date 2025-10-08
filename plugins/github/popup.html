@@ -11,6 +11,15 @@
 </div>
 
 <div class="option-group">
+    <p class="option-group-title">Detect JIRA</p>
+    <div class="option">
+        <button disabled class="button centered" id="gh-jira-ticket-links">
+            Not Detected
+        </button>
+    </div>
+</div>
+
+<div class="option-group">
     <p class="option-group-title">Slash Command Menu</p>
     <div class="option">
         <div class="switch" id="gh-slash-cmd">
@@ -61,6 +70,13 @@
                 <span class="slider"></span>
             </div>
             <p>Abbreviate Relative</p>
+        </div>
+        <div class="option">
+            <div class="switch" id="gh-timestamps-relnonbreaking">
+                <input type="checkbox" id="gh-timestamps-relnonbreaking-input">
+                <span class="slider"></span>
+            </div>
+            <p>Relative - Nonbreaking</p>
         </div>
         <div id="gh-timestamps-format-example"></div>
     </div>
