@@ -108,6 +108,7 @@ chrome.runtime.onMessage.addListener((message) => {
     console.log('Plugin: Github popup received message', message);
     if (message.action === 'ghFoundJiraTicket') {
         const button = document.getElementById('gh-jira-ticket-links')
+        if (!button) return
         const { jiraTicket } = message
         if (jiraTicket && button.innerText !== jiraTicket) {
             button.disabled = false
