@@ -83,6 +83,8 @@ function sendFoundJiraTicketNumber() {
   if (jiraTicket) {
     console.log('Jira ticket found:', jiraTicket)
     chrome.runtime.sendMessage({ action: 'ghFoundJiraTicket', jiraTicket });
+  } else {
+    chrome.runtime.sendMessage({ action: 'ghFoundJiraTicket', jiraTicket: null });
   }
 }
 
@@ -219,7 +221,7 @@ function parseComments(isSlashCommandMenu) {
    *  slashCommandAckText: string,
    * }
    */
-
+  
   timeLineItems.forEach((item) => {
     const timelineObj = { debug: {} }
     const header = item.querySelector('.timeline-comment-header')
@@ -258,22 +260,26 @@ function parseComments(isSlashCommandMenu) {
     /**
      * Slash Commands
      */
-    timelineObj.slashCommandLegend = timelineObj.comment.raw.includes('Click here for all available commands.')
-    const parsedSlashCmds = parseByEnv(parsedTimeline, timelineObj).slashCmds[parsedTimeline.repo.repoName](commentBody)
-    const legendCmds = Object.keys(parsedTimeline.legend)
-    // if suggested command not in legend, add it
-    if (!legendCmds.length) parsedTimeline.legend = parsedSlashCmds.reduce((a,c) => ({...a, [c]:''}), {})
-    else {
-      parsedSlashCmds.filter(cmd => !legendCmds.includes(cmd)).forEach(cmd => parsedTimeline.legend[cmd] = '')
-    }
-    timelineObj.slashCommands = [ ...new Set(parsedSlashCmds) ]
-    /**
-     * Slash Command Acknowledgement
-     */
-    const isSameCmd = timelineObj.slashCommands.length > 1 && timelineObj.slashCommands.every(cmd => cmd === timelineObj.slashCommands[0])
-    if (isSameCmd && timelineObj.isABot && commentBody.innerText.includes('request by')) {
-      timelineObj.slashCommandAck = commentBody.innerText.includes('was processed')
-      timelineObj.slashCommandAckText = commentBody.innerText.replace(timelineObj.slashCommands[0], '').trim()
+    const allSlashCommands = parseByEnv(parsedTimeline, timelineObj).slashCmds
+    const isAvailableRepo = Object.keys(allSlashCommands).includes(parsedTimeline.repo.repoName)
+    if (isAvailableRepo) {
+      timelineObj.slashCommandLegend = timelineObj.comment.raw.includes('Click here for all available commands.')
+      const parsedSlashCmds = parseByEnv(parsedTimeline, timelineObj).slashCmds[parsedTimeline.repo.repoName](commentBody)
+      const legendCmds = Object.keys(parsedTimeline.legend)
+      // if suggested command not in legend, add it
+      if (!legendCmds.length) parsedTimeline.legend = parsedSlashCmds.reduce((a,c) => ({...a, [c]:''}), {})
+      else {
+        parsedSlashCmds.filter(cmd => !legendCmds.includes(cmd)).forEach(cmd => parsedTimeline.legend[cmd] = '')
+      }
+      timelineObj.slashCommands = [ ...new Set(parsedSlashCmds) ]
+      /**
+       * Slash Command Acknowledgement
+       */
+      const isSameCmd = timelineObj.slashCommands.length > 1 && timelineObj.slashCommands.every(cmd => cmd === timelineObj.slashCommands[0])
+      if (isSameCmd && timelineObj.isABot && commentBody.innerText.includes('request by')) {
+        timelineObj.slashCommandAck = commentBody.innerText.includes('was processed')
+        timelineObj.slashCommandAckText = commentBody.innerText.replace(timelineObj.slashCommands[0], '').trim()
+      }
     }
 
     parsedTimeline.timeline.push(timelineObj)
@@ -288,7 +294,7 @@ function parseComments(isSlashCommandMenu) {
     ) {  
       parsedTimeline.recentSuggestions = timelineObj.slashCommands
     }
-    if (!timelineObj.isABot && timelineObj.slashCommands.length === 1) {
+    if (!timelineObj.isABot && timelineObj.slashCommands && timelineObj.slashCommands.length === 1) {
       parsedTimeline.recentSuggestions = []
     }
   })

@@ -105,14 +105,20 @@ const defaultTimestampFormat = 'MMM dd, yyyy, h:mm a zzz';
 })();
 
 chrome.runtime.onMessage.addListener((message) => {
+    console.log('Plugin: Github popup received message', message);
     if (message.action === 'ghFoundJiraTicket') {
         const button = document.getElementById('gh-jira-ticket-links')
-        if (button.innerText !== message.jiraTicket) {
+        const { jiraTicket } = message
+        if (jiraTicket && button.innerText !== jiraTicket) {
             button.disabled = false
             button.innerText = message.jiraTicket
             button.addEventListener('click', () => {
                 chrome.tabs.create({ url: `https://priceline.atlassian.net/browse/${message.jiraTicket}` })
             })
+        } else if (!jiraTicket) {
+            button.disabled = true
+            button.innerText = 'Not Detected'
+            button.removeEventListener('click')
         }
     }
 });
